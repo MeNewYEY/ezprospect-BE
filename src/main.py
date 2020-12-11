@@ -3,12 +3,13 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 import os
 from flask import Flask, request, jsonify, url_for
+from flask_admin.contrib.sqla import ModelView
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User, Prospects
 from flask_jwt_simple import (JWTManager, jwt_required, create_jwt, get_jwt_identity)
 from passlib.hash import sha256_crypt
 
@@ -76,7 +77,7 @@ def login():
 def handle_signup():
     input_data = request.json
 
-    if 'email' in input_data and 'password' in input_data:
+    if 'email' in input_data and 'password' in input_data and 'first_name' in input_data and 'last_name' in input_data and 'phone_number' in input_data:
 
         specific_user = User.query.filter_by(
             email=input_data['email']
@@ -87,20 +88,27 @@ def handle_signup():
         else:
             new_user= User(
                 email = input_data['email'],
-                password = sha256_crypt.encrypt(str(input_data['password']))
+                password = sha256_crypt.encrypt(str(input_data['password'])),
+                first_name = input_data['first_name'],
+                last_name = input_data['last_name'],
+                phone_number = input_data['phone_number']
             )
 
             db.session.add(new_user)
             try:
                 db.session.commit()
-                return jsonify(new_user.serialize()),200
+                response={
+                    "jwt" : create_jwt(identity=new_user.id),
+                    "user_id": new_user.id
+                }
+                return jsonify(response),200
 
             except Exception as error:
                 db.session.rollback()
                 return jsonify({"msg" : error}),500
 
     else:
-        return jsonify({"msg" : "email and password required"}),400
+        return jsonify({"msg" : "information required missing"}),400
 
 @app.route('/protected', methods=['GET'])
 @jwt_required
@@ -115,6 +123,39 @@ def protected():
 
     else:
         return jsonify(specific_user.serialize()),200
+
+@app.route('/addProspect', methods=['POST'])
+def add_prospect():
+    input_data = request.json
+
+    specific_prospect = Prospects.query.filter_by(
+        account=input_data['account']
+    ).one_or_none()
+
+    if isinstance(specific_prospect,Prospects):
+        return jsonify({"msg" : "prospect already created"}),400
+    else:
+        new_prospect= Prospects(
+            name = input_data['name'],
+            industry = input_data['industry'],
+            address1 = input_data['address1'],
+            city = input_data['city'],
+            state = input_data['state'],
+            zipCode = input_data['zipCode'],
+            phone_number = input_data['phone_number'],
+            account = input_data['account']
+        )
+        db.session.add(new_prospect)
+        db.session.commit()            
+        return jsonify(input_data),200
+
+@app.route('/prospects', methods=['GET'])
+def get_all_prospects():
+        prosprospects_query = Prospects.query.all()
+        prosprospects_list = list(map(lambda each: each.serialize(), prosprospects_query))
+        return jsonify(prosprospects_list), 200
+
+
 
 # EBIDA = Earnings Before Interest Depreciation and Amortization
 # Net Income + Interest Expense + Depreciation and Amortization Expense

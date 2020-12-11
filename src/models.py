@@ -1,63 +1,88 @@
 from flask_sqlalchemy import SQLAlchemy
+from datetime import timezone
 
 db = SQLAlchemy()
 
 class User(db.Model):
-    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(250), unique=True, nullable=False)
     password = db.Column(db.String(250), unique=False, nullable=False)
-    # firstname = db.Column(db.varchar(250), unique=False, nullable=False)
-    # lastname = db.Column(db.varchar(250), unique=False, nullable=False)
-    # phonenumber = db.Column(db.varchar(50), unique=False, nullable=False)
+    first_name = db.Column(db.String(250), unique=False, nullable=False)
+    last_name = db.Column(db.String(250), unique=False, nullable=False)
+    phone_number = db.Column(db.String(50), unique=False, nullable=False)
     # reset_password_token = db.Column(db.String(80), unique=False, nullable=False)
     # reset_password_expiration = db.Column(db.String(80), unique=False, nullable=False)
-    # created_at = db.Column(db.String(80), unique=False, nullable=False)
-    # modified_at = db.Column(db.String(80), unique=False, nullable=False)    
+    # created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
+    # modified_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)    
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
 
     # organization_id = db.Column(Integer, ForeignKey('organization.organization_id'))
     # organization = relationship(Organization)
-
-    def __init__(self,email,password):
+# 
+    def __init__(self,email,password,first_name,last_name,phone_number):
         self.email=email
         self.password=password
+        self.first_name=first_name
+        self.last_name=last_name
+        self.phone_number=phone_number
         self.is_active=True
 
 
     def __repr__(self):
-        return '<User %r>' % self.username
+        return '<User %r>' % self.email
 
     def serialize(self):
         return {
             "id": self.id,
             "email": self.email,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "phone_number": self.phone_number
             # do not serialize the password, its a security breach
         }
 
-# class Prospects(db.Model):
-#     __tablename__ = 'prospects'
-#     prospect_id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.Varchar(250), unique=True, nullable=False)
-#     industry = db.Column(db.Varchar(250), unique=False, nullable=False)
-#     address1 = db.Column(db.varchar(250), unique=False, nullable=False)
-#     address2 = db.Column(db.varchar(250), unique=False, nullable=False)
-#     city = db.Column(db.varchar(250), unique=False, nullable=False)
-#     state = db.Column(db.varchar(250), unique=False, nullable=False)
-#     background = db.Column(db.String(80), unique=False, nullable=False)
-#     created_at = db.Column(db.String(80), unique=False, nullable=False)
-#     modified_at = db.Column(db.String(80), unique=False, nullable=False)    
-#     is_active = db.Column(db.Boolean(), unique=False, nullable=False)    
+class Prospects(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(250), unique=True, nullable=False)
+    industry = db.Column(db.String(250), unique=False, nullable=False)
+    address1 = db.Column(db.String(250), unique=False, nullable=False)
+    city = db.Column(db.String(250), unique=False, nullable=False)
+    state = db.Column(db.String(250), unique=False, nullable=False)
+    zipCode = db.Column(db.String(250), unique=False, nullable=False)
+    phone_number = db.Column(db.String(250), unique=False, nullable=False)
+    account = db.Column(db.String(250), unique=False, nullable=False)
+    # background = db.Column(db.String(80), unique=False, nullable=False)
+    # created_at = db.Column(db.String(80), unique=False, nullable=False)
+    # modified_at = db.Column(db.String(80), unique=False, nullable=False)    
+    is_active = db.Column(db.Boolean(), unique=False, nullable=False)
 
-#     def __repr__(self):
-#         return '<User %r>' % self.username
+    def __init__(self,name,industry,address1,city,state,zipCode,phone_number,account):
+        self.name=name
+        self.industry=industry
+        self.address1=address1
+        self.city=city
+        self.state=state
+        self.zipCode=zipCode
+        self.phone_number=phone_number
+        self.account=account
+        self.is_active=True 
 
-#     def serialize(self):
-#         return {
-#             "id": self.id,
-#             "email": self.email,
-#             # do not serialize the password, its a security breach
-#         }
+    def __repr__(self):
+        return '<Prospects %r>' % self.account
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "industry": self.industry,
+            "address1": self.address1,
+            "city": self.city,
+            "state": self.state,
+            "zipCode": self.zipCode,
+            "phone_number": self.phone_number,
+            "account": self.account
+            # do not serialize the password, its a security breach
+        }
 
 # class Contacts(db.Model):
 #     __tablename__ = 'contacts'
