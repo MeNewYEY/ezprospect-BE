@@ -10,6 +10,8 @@ class User(db.Model):
     first_name = db.Column(db.String(250), unique=False, nullable=False)
     last_name = db.Column(db.String(250), unique=False, nullable=False)
     phone_number = db.Column(db.String(50), unique=False, nullable=False)
+    # users_Prospects = db.relationship("Users_Prospects")
+
     # reset_password_token = db.Column(db.String(80), unique=False, nullable=False)
     # reset_password_expiration = db.Column(db.String(80), unique=False, nullable=False)
     # created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
@@ -38,6 +40,7 @@ class User(db.Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "phone_number": self.phone_number
+            # "users_Prospects": list(map(lambda x: x.serialize(), self.users_Prospects))
             # do not serialize the password, its a security breach
         }
 
@@ -51,6 +54,7 @@ class Prospects(db.Model):
     zipCode = db.Column(db.String(250), unique=False, nullable=False)
     phone_number = db.Column(db.String(250), unique=False, nullable=False)
     account = db.Column(db.String(250), unique=False, nullable=False)
+    # users_prospects = db.relationship('Users_Prospects', backref='prospect', lazy=True)
     # background = db.Column(db.String(80), unique=False, nullable=False)
     # created_at = db.Column(db.String(80), unique=False, nullable=False)
     # modified_at = db.Column(db.String(80), unique=False, nullable=False)    
@@ -81,8 +85,34 @@ class Prospects(db.Model):
             "zipCode": self.zipCode,
             "phone_number": self.phone_number,
             "account": self.account
+            # "users_Prospects": list(map(lambda x: x.serialize(), self.users_Prospects))
             # do not serialize the password, its a security breach
         }
+
+# class Users_Prospects(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     user_id = db.Column(db.Integer, db.ForeignKey(user.id),
+#         nullable=False)
+#     prospect_id = db.Column(db.Integer, db.ForeignKey(prospect.id),
+#         nullable=False)
+
+#     def __repr__(self):
+#         return f'<Users_Prospects {self.id}>'
+
+#     def serialize(self):
+#         return {
+#             "id": self.id,
+#             "user_id":self.user_id,
+#             "prospect_id": self.prospect_id
+#         }
+
+# class Prospects_Contacts(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     prospect_id = db.Column(db.Integer, db.ForeignKey(Prospects.id))
+#     contact_id = db.Column(db.Integer, db.ForeignKey(Business.id))
+   
+
+
 
 # class Contacts(db.Model):
 #     __tablename__ = 'contacts'
