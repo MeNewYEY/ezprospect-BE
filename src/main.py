@@ -9,7 +9,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Prospects
+from models import db, User, Prospects, Financials
 from flask_jwt_simple import (JWTManager, jwt_required, create_jwt, get_jwt_identity)
 from passlib.hash import sha256_crypt
 
@@ -154,6 +154,35 @@ def get_all_prospects():
         prosprospects_query = Prospects.query.all()
         prosprospects_list = list(map(lambda each: each.serialize(), prosprospects_query))
         return jsonify(prosprospects_list), 200
+
+@app.route('/financials', methods=['POST'])
+@jwt_required
+def save_financials():
+    input_data = request.json
+
+    # Do Validation
+    # Make sure to check all required columns are set
+    # look at line 80
+    # And make sure you assign user_id to input_data['user_id']
+
+    new_financial = Financials( accounts=input_data )
+    db.session.add(new_financial)
+    
+    # You will have to format the following code accordingly
+    try:
+        db.session.commit()
+        # the response dictionary needs to be worked - maybe serialize the values of new_financial to give the values they want?
+
+        response={
+            'financial' : new_financial
+        }
+        return jsonify(response),200
+
+    except Exception as error:
+        db.session.rollback()
+        # don't forget to set the error value
+        return jsonify({"msg" : error}),500
+
 
 
 
