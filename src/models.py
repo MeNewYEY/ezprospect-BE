@@ -246,12 +246,12 @@ class Organizations(db.Model):
 class Financials(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     prospect_id = db.Column(db.Integer, unique=False)
-    user_id = db.Column(db.Integer, primary_key=True)
-    statement_date = db.Column(db.Integer, primary_key=True)
-    quality = db.Column(db.Integer, primary_key=True)
-    fye_month = db.Column(db.Integer, primary_key=True)
-    fye_day = db.Column(db.Integer, primary_key=True)
-    prepared_by = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, primary_key=False)
+    statement_date = db.Column(db.Integer, primary_key=False)
+    quality = db.Column(db.Integer, primary_key=False)
+    fye_month = db.Column(db.Integer, primary_key=False)
+    fye_day = db.Column(db.Integer, primary_key=False)
+    prepared_by = db.Column(db.Integer, primary_key=False)
     cash = db.Column(db.Decimal, unique=False, nullable=False)
     accounts_receivable = db.Column(db.Decimal, unique=False, nullable=False)
     raw_materials = db.Column(db.Decimal, unique=False, nullable=False)
@@ -286,7 +286,7 @@ class Financials(db.Model):
     other_notes_payable = db.Column(db.Decimal, unique=False, nullable=False)
     accounts_payable_trade = db.Column(db.Decimal, unique=False, nullable=False)
     other_current_liabilities = db.Column(db.Decimal, unique=False, nullable=False)
-    total_current_liaibilities = db.Column(db.Decimal, unique=False, nullable=False)
+    total_current_liabilities = db.Column(db.Decimal, unique=False, nullable=False)
     ltd_secured = db.Column(db.Decimal, unique=False, nullable=False)
     ltd_unsecured = db.Column(db.Decimal, unique=False, nullable=False)
     other_lt_notes_payable = db.Column(db.Decimal, unique=False, nullable=False)
@@ -315,6 +315,7 @@ class Financials(db.Model):
     other_operating_expenses = db.Column(db.Decimal, unique=False, nullable=False)
     total_operating_expenses = db.Column(db.Decimal, unique=False, nullable=False)
     total_operating_profit = db.Column(db.Decimal, unique=False, nullable=False)
+    operating_profit_margin = db.Column(db.Decimal, unique=False, nullable=False)
     interest_expense = db.Column(db.Decimal, unique=False, nullable=False)
     interest_income = db.Column(db.Decimal, unique=False, nullable=False)
     other_non_operating_income_expense = db.Column(db.Decimal, unique=False, nullable=False)
@@ -325,7 +326,7 @@ class Financials(db.Model):
     distributions = db.Column(db.Decimal, unique=False, nullable=False)
     ebida = db.Column(db.Decimal, unique=False, nullable=False)
     ebitda = db.Column(db.Decimal, unique=False, nullable=False)
-    operating_profit_margin = db.Column(db.Decimal, unique=False, nullable=False)
+    ebitdar = db.Column(db.Decimal, unique=False, nullable=False)
     net_profit_margin = db.Column(db.Decimal, unique=False, nullable=False)
     roa = db.Column(db.Decimal, unique=False, nullable=False)
     roe = db.Column(db.Decimal, unique=False, nullable=False)
@@ -353,18 +354,18 @@ class Financials(db.Model):
         self.leasehold_improvements = accounts["leasehold_improvements"]
         self.capital_leases = accounts["capital_leases"]
         self.other_fixed_assets = accounts["other_fixed_assets"]
-        # self.total_gross_fixed_assets = accounts["column"]
+        self.total_gross_fixed_assets = self.calculate_total_gross_fixed_assets(accounts["land"], accounts["construction_in_progress"], accounts["buildings"], accounts["machines_and_equipment"], accounts["furniture_and_fixtures"], accounts["vehicles"], accounts["leasehold_improvements"], accounts["capital_leases"], accounts["other_fixed_assets"])
         self.accumulated_depreciation = accounts["accumulated_depreciation"]
-        self.net_fixed_assets = self.calculate_net_fixed_assets(accounts["column"]
+        self.net_fixed_assets = self.calculate_net_fixed_assets(accounts["total_gross_fixed_assets"], accounts["accumulated_depreciation"])
         self.other_operating_assets = accounts["other_operating_assets"]
         self.goodwill = accounts["goodwill"]
         self.other_intangibles = accounts["other_intangibles"]
-        # self.total_intangibles = accounts["column"]
+        self.total_intangibles = self.calculate_total_intangibles(accounts["goodwill"], accounts["other_intanigbles"])
         self.accumulated_amortization = accounts["accumulated_amortization"]
-        # self.net_intangibles = accounts["column"]
+        self.net_intangibles = self.calculate_net_intangibles(accounts["total_intangibles"], accounts["accumulated_amortization"])
         self.other_non_operating_assets = accounts["other_non_operating_assets"]
-        # self.total_non_current_assets = accounts["column"]
-        # self.total_assets = accounts["column"]
+        self.total_non_current_assets = self.calculate_total_non_current_assets(accounts["net_fixed_assets"], accounts["other_operating_assets"], accounts["net_intangibles"], accounts["other_non_operating_assets"])
+        self.total_assets = self.calculate_total_assets(accounts["total_current_assets"], accounts["total_non_current_assets"])
         self.short_term_debt_secured = accounts["short_term_debt_secured"]
         self.short_term_debt_unsecured = accounts["short_term_debt_unsecured"]
         self.cpltd_secured = accounts["cpltd_secured"]
@@ -372,59 +373,137 @@ class Financials(db.Model):
         self.other_notes_payable = accounts["other_notes_payable"]
         self.accounts_payable_trade = accounts["accounts_payable_trade"]
         self.other_current_liabilities = accounts["other_current_liabilities"]
-        # self.total_current_liaibilities = accounts["column"]
+        self.total_current_liaibilities = self.calculate_total_current_liabilities(accounts["short_term_debt_secured"], accounts["short_term_debt_unsecured"], accounts["cpltd_secured"], accounts["cpltd_unsecured"], accounts["other_notes_payable"], accounts["accounts_payable_trade"], accounts["other_current_liabilities"])
         self.ltd_secured = accounts["ltd_secured"]
         self.ltd_unsecured = accounts["ltd_unsecured"]
         self.other_lt_notes_payable = accounts["other_lt_notes_payable"]
         self.other_operating_liaibilities = accounts["other_operating_liabilities"]
         self.other_non_operating_liabilities = accounts["other_non_operating_liabilities"]
-        # self.total_non_current_liabilities = accounts["column"]
-        # self.total_liabilities = accounts["column"]
+        self.total_non_current_liabilities = self.calculate_total_non_current_liabilities(accounts["ltd_secured"], accounts["ltd_unsecured"], accounts["other_lt_notes_payable"])
+        self.total_liabilities = self.calculate_total_liabilities(accounts["total_current_liabilities"], accounts["total_non_current_liabilities"])
         self.common_stock = accounts["common_stock"]
         self.additional_paid_in_capital = accounts["additional_paid_in_capital"]
         self.retained_earnings = accounts["retained_earnings"]
-        # self.total_equity = accounts["column"]
-        # self.tangible_net_worth = accounts["column"]
-        # self.working_capital = accounts["column"]
-        # self.current_ratio = accounts["column"]
-        # self.quick_ratio = accounts["column"]
-        # self.leverage = accounts["column"]
+        self.total_equity = self.calculate_total_equity(accounts["common_stock"], accounts["additional_paid_in_capital"], accounts["retained_earnings"])
+        self.tangible_net_worth = self.calculate_tangible_net_worth(accounts["total_equity"], accounts["net_intangibles"])
+        self.working_capital = self.calculate_working_capital(accounts["total_current_assets"], accounts["total_current_liabilities"])
+        self.current_ratio = self.calculate_current_ratio(accounts["total_current_assets"], accounts["total_current_liabilities"])
+        self.quick_ratio = self.calculate_quick_ratio(accounts["total_current_assets"], accounts["total_inventory"], accounts["total_current_liabilities"])
+        self.leverage = self.calculate_leverage(accounts["total_liabilities"], accounts["total_equity"])
         self.total_revenue = accounts["total_revenue"]
         self.total_cogs = accounts["total_cogs"]
-        self.gross_profit = self.calculate_gross_profit(accounts["total_revenues"], accounts["total_cogs"])
-        # self.gpm = accounts["column"]
+        self.gross_profit = self.calculate_gross_profit(accounts["total_revenue"], accounts["total_cogs"])
+        self.gpm = self.calculate_gpm(accounts["gross_profit"], accounts["total_revenue"])
         self.sga_expenses = accounts["sga_expenses"]
         self.rent_expense = accounts["rent_expense"]
         self.depreciation_expense = accounts["depreciation_expense"]
         self.amortization_expense = accounts["amortization_expense"]
         self.bad_debt_expense = accounts["bad_debt_expense"]
         self.other_operating_expenses = accounts["other_operating_expenses"]
-        # self.total_operating_expenses = accounts["column"]
-        # self.total_operating_profit = accounts["column"]
-        # self.operating_profit_margin = accounts["column"]
+        self.total_operating_expenses = self.calculate_total_operating_expenses(accounts["sga_expenses"], accounts["rent_expense"], accounts["depreciation_expense"], accounts["amortization_expense"], accounts["bad_debt_expense"], accounts["other_operating_expenses"])
+        self.total_operating_profit = self.calculate_total_operating_profit(accounts["gross_profit"], accounts["total_operating_expenses"])
+        self.operating_profit_margin = self.calculate_operating_profit_margin(accounts["total_operating_profit"], accounts["total_revenue"])
         self.interest_expense = accounts["interest_expense"]
         self.interest_income = accounts["interest_income"]
         self.other_non_operating_income_expense = accounts["other_non_operating_income_expense"]
-        # self.total_non_operating_income_expense = accounts["column"]
-        # self.total_profit_before_taxes = accounts["column"]
+        self.total_non_operating_income_expense = self.calculate_total_non_operating_income_expense(accounts["interest_expense"], accounts["interest_income"], accounts["other_non_operating_income_expense"])
+        self.total_profit_before_taxes = self.calculate_total_profit_before_taxes(accounts["total_operating_profit"], accounts["total_non_operating_income_expense"])
         self.tax_provision = accounts["tax_provision"]
-        # self.net_income = accounts["net_income"]
-        # self.net_profit_margin = accounts["column"]
+        self.net_income = self.calculate_net_income(accounts["total_profit_before_taxes"], accounts["tax_provision"])
+        self.net_profit_margin = self.calculate_net_profit_margin(accounts["net_income"], accounts["total_revenue"])
         self.distributions = accounts["distributions"]
-        # self.ebida = accounts["column"]
-        # self.ebitda = accounts["column"]
-        # self.roa = accounts["column"]
-        # self.roe = accounts["column"]
+        self.ebida = self.calculate_ebida(accounts["net_income"], accounts["interest_expense"], accounts["depreciation_expense"], accounts["amortization_expense"])
+        self.ebitda = calculate_ebitda(accounts["net_income"], accounts["interest_expense"], accounts["tax_provision"], accounts["depreciation_expense"], accounts["amortization_expense"])
+        self.ebitdar = self.calculate_ebitdar(accounts["net_income"], accounts["interest_expense"], accounts["tax_provision"], accounts["depreciation_expense"], accounts["amortization_expense"], accounts["rent_expense"])
+        self.roa = self.calculate_roa(accounts["net_income"], accounts["total_assets"])
+        self.roe = self.calculate_roe(accounts["net_income, total_equity"])
 
     def calculate_total_inventory (self, raw_materials, work_in_process, finished_goods):
         return raw_materials + work_in_process + finished_goods
-    
-    def calculate_total_gross_fixed_assets (self, land, construction_in_progress, buildings, machines_and_equipment, furniture_and_fixtures, vehicles, leasehold_improvements, capital_leases, other_fixed_assets)
+
+    def calculate_total_gross_fixed_assets (self, land, construction_in_progress, buildings, machines_and_equipment, furniture_and_fixtures, vehicles, leasehold_improvements, capital_leases, other_fixed_assets):
         return land + construction_in_progress + buildings + machines_and_equipment + furniture_and_fixtures + vehicles + leasehold_improvements + capital_leases+ other_fixed_assets
 
-    def calculate_net_fixed_assets (self, calculate_total_gross_fixed_assets, accumulated_depreciation)
-        return calculate_total_gross_fixed_assets() - accumulated_depreciation
+    def calculate_net_fixed_assets (self, total_gross_fixed_assets, accumulated_depreciation):
+        return total_gross_fixed_assets - accumulated_depreciation
 
-    def calculate_gross_profit (self, total_revenues,total_cogs):
+    def calculate_total_intangibles (self, goodwill, other_intanigbles):
+        return goodwill + other_intangibles
+
+    def calculate_net_intangibles (self, total_intangibles, accumulated_amortization):
+        return total_intangibles - accumulated_amortization
+
+    def calculate_total_non_current_assets (self, net_fixed_assets, other_operating_assets, net_intangibles, other_non_operating_assets):
+        return net_fixed_assets + other_operating_assets + net_intangibles + other_non_operating_assets
+
+    def calculate_total_assets (self, total_current_assets, total_non_current_assets):
+        return total_current_assets + total_non_current_assets
+
+    def calculate_total_current_liabilities (self, short_term_debt_secured, short_term_debt_unsecured, cpltd_secured, cpltd_unsecured, other_notes_payable, accounts_payable_trade, other_current_liabilities):
+        return short_term_debt_secured + short_term_debt_unsecured + cpltd_secured + cpltd_unsecured + other_notes_payable + accounts_payable_trade + other_current_liabilities
+
+    def calculate_total_non_current_liabilities (self, ltd_secured, ltd_unsecured, other_lt_notes_payable):
+        return ltd_secured + ltd_unsecured + other_lt_notes_payable
+    
+    def calculate_total_liabilities (self, total_current_liabilities, total_non_current_liabilities):
+        return total_current_liabilities + total_non_current_liabilities
+
+    def calculate_total_equity (self, common_stock, additional_paid_in_capital, retained_earnings):
+        return common_stock + additional_paid_in_capital + retained_earnings
+
+    def calculate_tangible_net_worth (self, total_equity, net_intangibles):
+        return total_equity - net_intangibles
+
+    def calculate_working_capital (self, total_current_assets, total_current_liabilities):
+        return total_current_assets - total_current_liabilities
+    
+    def calculate_current_ratio (self, total_current_assets, total_current_liabilities):
+        return total_current_assets / total_current_liabilities
+
+    def calculate_quick_ratio (self, total_current_assets, total_inventory, total_current_liabilities):
+        return (total_current_assets - total_inventory) / total_current_liabilities
+
+    def calculate_leverage (self, total_liabilities, total_equity):
+        return total_liabilities / total_equity
+    
+    def calculate_gross_profit (self, total_revenue,total_cogs):
         return total_revenue - total_cogs
         
+    def calculate_gpm (self, gross_profit, total_revenue):
+        return gross_profit / total_revenue
+
+    def calculate_total_operating_expenses (self, sga_expenses, rent_expense, depreciation_expense, amortization_expense, bad_debt_expense, other_operating_expenses):
+        return sga_expenses + rent_expense + depreciation_expense + amortization_expense + bad_debt_expense + other_operating_expenses
+
+    def calculate_total_operating_profit (self, gross_profit, total_operating_expenses):
+        return gross_profit - total_operating_expenses
+
+    def calculate_operating_profit_margin (self, total_operating_profit, total_revenue):
+        return total_operating_profit / total_revenue
+
+    def calculate_total_non_operating_income_expense (self, interest_expense, interest_income, other_non_operating_income_expense):
+        return interest_expense + interest_income + other_non_operating_income_expense
+
+    def calculate_total_profit_before_taxes (self, total_operating_profit, total_non_operating_income_expense):
+        return total_operating_profit - total_non_operating_income_expense
+
+    def calculate_net_income (self, total_profit_before_taxes, tax_provision):
+        return total_profit_before_taxes - tax_provision
+
+    def calculate_net_profit_margin (self, net_income, total_revenue):
+        return net_income / total_revenue
+
+    def calculate_ebida (self, net_income, interest_expense, depreciation_expense, amortization_expense):
+        return net_income + interest_expense + depreciation_expense + amortization_expense
+
+    def calculate_editda (self, net_income, interest_expense, tax_provision, depreciation_expense, amortization_expense):
+        return net_income + interest_expense + tax_provision + depreciation_expense + amortization_expense
+
+    def calculate_ebitdar (self, net_income, interest_expense, depreciation_expense, amortization_expense, rent_expense):
+        return net_income + interest_expense + tax_provision + depreciation_expense + amortization_expense + rent_expense
+    
+    def calculate_roa (self, net_income, total_assets):
+        return net_income / total_assets
+
+    def calculate_roe (self, net_income, total_equity):
+        return net_income / total_equity
