@@ -9,12 +9,11 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Prospects
+# from datetime import date, time, datetime
+from models import db, User, Prospects, Contacts, Organizations
 from flask_jwt_simple import (JWTManager, jwt_required, create_jwt, get_jwt_identity)
 from passlib.hash import sha256_crypt
 
-
-#from models import Person
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -83,6 +82,9 @@ def handle_signup():
             email=input_data['email']
         ).one_or_none()
 
+        organization = Organizations.query.get(input_data['organization_id'])
+
+
         if isinstance(specific_user,User):
             return jsonify({"msg" : "email already in use"}),400
         else:
@@ -93,7 +95,7 @@ def handle_signup():
                 last_name = input_data['last_name'],
                 phone_number = input_data['phone_number']
             )
-
+            organization.users.append(new_user)
             db.session.add(new_user)
             try:
                 db.session.commit()
@@ -126,34 +128,86 @@ def protected():
 
 @app.route('/addProspect', methods=['POST'])
 def add_prospect():
-    input_data = request.json
+    input_data = request.json 
+    user_id = input_data['user_id']
+
+    new_prospect= Prospects(
+        name = input_data['name'],
+        industry = input_data['industry'],
+        address1 = input_data['address1'],
+        city = input_data['city'],
+        state = input_data['state'],
+        zipCode = input_data['zipCode'],
+        phone_number = input_data['phone_number'],
+        account = input_data['account']
+    )
+
+    user = User.query.filter_by(
+        id=user_id
+    ).one_or_none()    
 
     specific_prospect = Prospects.query.filter_by(
         account=input_data['account']
     ).one_or_none()
 
     if isinstance(specific_prospect,Prospects):
-        return jsonify({"msg" : "prospect already created"}),400
-    else:
-        new_prospect= Prospects(
-            name = input_data['name'],
-            industry = input_data['industry'],
-            address1 = input_data['address1'],
-            city = input_data['city'],
-            state = input_data['state'],
-            zipCode = input_data['zipCode'],
-            phone_number = input_data['phone_number'],
-            account = input_data['account']
-        )
+        prospect_id = specific_prospect.id
+        prospects_query = User.query.filter(User.userprospects.any(id=prospect_id)).filter(Prospects.prospectsuser.any(id=user_id)).all()
+        prospects_list = list(filter(lambda each: each.id==user_id, prospects_query))
+        if not prospects_list:
+            specific_prospect.prospectsuser.append(user)
+            db.session.commit() 
+            return jsonify(input_data),200
+        else:
+            return jsonify({"msg" : "prospect already created"}),400
+    else:   
         db.session.add(new_prospect)
+        user.userprospects.append(new_prospect)
+        db.session.commit()             
+        return jsonify(input_data),200
+
+@app.route('/prospects/<int:user_id>', methods=['GET'])
+def get_all_prospects(user_id):
+        prospects_query = Prospects.query.filter(Prospects.prospectsuser.any(id=user_id)).all()
+        prospects_list = list(map(lambda each: each.serialize(), prospects_query))
+        return jsonify(prospects_list), 200
+
+
+@app.route('/addContact', methods=['POST'])
+def addContact():
+    input_data = request.json
+
+    prospect_account = Prospects.query.filter_by(
+        account=input_data['account']
+    ).one_or_none()
+
+    specific_contact = Contacts.query.filter_by(
+        first_name=input_data['first_name'],
+        last_name=input_data['last_name']
+    ).one_or_none()
+
+    if isinstance(specific_contact,Contacts):
+        return jsonify({"msg" : "contact already created"}),400
+    else:
+        new_contact= Contacts(
+            first_name = input_data['first_name'],
+            last_name = input_data['last_name'],
+            position = input_data['position'],
+            title = input_data['title'],
+            email = input_data['email'],
+            phone_number = input_data['phone_number']
+        )
+        db.session.add(new_contact)
+        new_contact.prospectscontacts.append(prospect_account)
         db.session.commit()            
         return jsonify(input_data),200
 
-@app.route('/prospects', methods=['GET'])
-def get_all_prospects():
-        prosprospects_query = Prospects.query.all()
-        prosprospects_list = list(map(lambda each: each.serialize(), prosprospects_query))
-        return jsonify(prosprospects_list), 200
+@app.route('/contacts', methods=['GET'])
+def get_all_contacts():
+        contacts_query = Contacts.query.all()
+        # contacts_query = Contacts.query.filter(Contacts.prospectscontacts.any(id=user_id)).all()
+        contacts_list = list(map(lambda each: each.serialize(), contacts_query))
+        return jsonify(contacts_list), 200
 
 
 
