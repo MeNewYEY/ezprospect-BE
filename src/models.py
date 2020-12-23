@@ -1,7 +1,18 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import timezone
+from datetime import date, time, datetime
 
 db = SQLAlchemy()
+
+user_prospects = db.Table('user_prospects',
+    db.Column("user_id", db.Integer, db.ForeignKey("user.id"), primary_key=True),
+    db.Column("prospect_id", db.Integer, db.ForeignKey("prospects.id"), primary_key=True)
+)
+
+prospects_contacts = db.Table('prospects_contacts',
+    db.Column("contact_id", db.Integer, db.ForeignKey("contacts.id"), primary_key=True),
+    db.Column("prospect_id", db.Integer, db.ForeignKey("prospects.id"), primary_key=True)
+)
+
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -10,25 +21,19 @@ class User(db.Model):
     first_name = db.Column(db.String(250), unique=False, nullable=False)
     last_name = db.Column(db.String(250), unique=False, nullable=False)
     phone_number = db.Column(db.String(50), unique=False, nullable=False)
-    # users_Prospects = db.relationship("Users_Prospects")
-
-    # reset_password_token = db.Column(db.String(80), unique=False, nullable=False)
-    # reset_password_expiration = db.Column(db.String(80), unique=False, nullable=False)
-    # created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
-    # modified_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)    
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
+    userprospects = db.relationship('Prospects', secondary=user_prospects, backref=db.backref('prospectsuser', lazy='dynamic'))   
+    created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
+    organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'))
 
-    # organization_id = db.Column(Integer, ForeignKey('organization.organization_id'))
-    # organization = relationship(Organization)
-# 
     def __init__(self,email,password,first_name,last_name,phone_number):
         self.email=email
         self.password=password
         self.first_name=first_name
         self.last_name=last_name
         self.phone_number=phone_number
-        self.is_active=True
-
+        self.created_at = datetime.now()
+        self.is_active=True 
 
     def __repr__(self):
         return '<User %r>' % self.email
@@ -39,8 +44,8 @@ class User(db.Model):
             "email": self.email,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "phone_number": self.phone_number
-            # "users_Prospects": list(map(lambda x: x.serialize(), self.users_Prospects))
+            "phone_number": self.phone_number,
+            "organization_id": self.organization_id
             # do not serialize the password, its a security breach
         }
 
@@ -54,10 +59,8 @@ class Prospects(db.Model):
     zipCode = db.Column(db.String(250), unique=False, nullable=False)
     phone_number = db.Column(db.String(250), unique=False, nullable=False)
     account = db.Column(db.String(250), unique=False, nullable=False)
-    # users_prospects = db.relationship('Users_Prospects', backref='prospect', lazy=True)
     # background = db.Column(db.String(80), unique=False, nullable=False)
-    # created_at = db.Column(db.String(80), unique=False, nullable=False)
-    # modified_at = db.Column(db.String(80), unique=False, nullable=False)    
+    created_at = db.Column(db.String(80), unique=False, nullable=False) 
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
 
     def __init__(self,name,industry,address1,city,state,zipCode,phone_number,account):
@@ -69,6 +72,7 @@ class Prospects(db.Model):
         self.zipCode=zipCode
         self.phone_number=phone_number
         self.account=account
+        self.created_at = datetime.datetime.now()
         self.is_active=True 
 
     def __repr__(self):
@@ -85,54 +89,29 @@ class Prospects(db.Model):
             "zipCode": self.zipCode,
             "phone_number": self.phone_number,
             "account": self.account
-            # "users_Prospects": list(map(lambda x: x.serialize(), self.users_Prospects))
             # do not serialize the password, its a security breach
         }
 
-# class Users_Prospects(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     user_id = db.Column(db.Integer, db.ForeignKey(user.id),
-#         nullable=False)
-#     prospect_id = db.Column(db.Integer, db.ForeignKey(prospect.id),
-#         nullable=False)
-
-#     def __repr__(self):
-#         return f'<Users_Prospects {self.id}>'
-
-#     def serialize(self):
-#         return {
-#             "id": self.id,
-#             "user_id":self.user_id,
-#             "prospect_id": self.prospect_id
-#         }
-
-# class Prospects_Contacts(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     prospect_id = db.Column(db.Integer, db.ForeignKey(Prospects.id))
-#     contact_id = db.Column(db.Integer, db.ForeignKey(Business.id))   
-
-
-
 class Contacts(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    firstname = db.Column(db.String(250), unique=True, nullable=False)
-    lastname = db.Column(db.String(250), unique=False, nullable=False)
+    first_name = db.Column(db.String(250), unique=True, nullable=False)
+    last_name = db.Column(db.String(250), unique=False, nullable=False)
     position = db.Column(db.String(250), unique=False, nullable=False)
     title = db.Column(db.String(250), unique=False, nullable=False)
     email = db.Column(db.String(250), unique=False, nullable=False)
     phone_number = db.Column(db.String(250), unique=False, nullable=False)
-    # created_at = db.Column(db.String(80), unique=False, nullable=False)
-    # modified_at = db.Column(db.String(80), unique=False, nullable=False)    
+    prospectscontacts = db.relationship('Prospects', secondary=prospects_contacts, backref=db.backref('prospectscontacts', lazy='dynamic'))
+    created_at = db.Column(db.String(80), unique=False, nullable=False)  
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)    
 
-    def __init__(self,firstname,lastname,position,title,email,zipCode,phone_number):
-        self.firstname=firstname
-        self.lastname=lastname
+    def __init__(self,first_name,last_name,position,title,email,phone_number):
+        self.first_name=first_name
+        self.last_name=last_name
         self.position=position
         self.title=title
         self.email=email
-        self.zipCode=zipCode
         self.phone_number=phone_number
+        self.created_at = datetime.datetime.now()
         self.is_active=True 
 
     def __repr__(self):
@@ -141,12 +120,11 @@ class Contacts(db.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "firstname": self.firstname,
-            "lastname": self.lastname,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
             "position": self.position,
             "title": self.title,
             "email": self.email,
-            "zipCode": self.zipCode,
             "phone_number": self.phone_number
         }
 
@@ -187,8 +165,7 @@ class Products(db.Model):
     name = db.Column(db.String(250), unique=False, nullable=False)
     description = db.Column(db.String(250), unique=False, nullable=False)
     status = db.Column(db.Boolean(), unique=False, nullable=False)
-    # organization_id = db.Column(Integer, ForeignKey('organization.organization_id'))
-    # organization = relationship(Organization)
+    organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'))
 
     def __init__(self,name,description):
         self.name=name
@@ -216,6 +193,9 @@ class Organizations(db.Model):
     state = db.Column(db.String(80), unique=False, nullable=False)
     zipCode = db.Column(db.Integer, unique=False, nullable=False)
     phone_number = db.Column(db.String(50), unique=False, nullable=False)
+    users = db.relationship('User', backref="organizations")
+    products = db.relationship('Products', backref="organizations")
+    
 
     def __init__(self,name,address1,address2,city,state,zipCode,phone_number):
         self.name=name
@@ -240,6 +220,7 @@ class Organizations(db.Model):
             "state": self.state,
             "zipCode": self.zipCode,
             "phone_number": self.phone_number,
+            "users": list(map(lambda x: x.serialize(), self.users))
             # do not serialize the password, its a security breach
         }
 
