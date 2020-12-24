@@ -394,13 +394,13 @@ class Financials(db.Model):
         self.net_profit_margin = self.calculate_net_profit_margin(accounts["net_income"], accounts["total_revenue"])
         self.distributions = accounts["distributions"]
         self.ebida = self.calculate_ebida(accounts["net_income"], accounts["interest_expense"], accounts["depreciation_expense"], accounts["amortization_expense"])
-        self.ebitda = calculate_ebitda(accounts["net_income"], accounts["interest_expense"], accounts["tax_provision"], accounts["depreciation_expense"], accounts["amortization_expense"])
+        self.ebitda = self.calculate_ebitda(accounts["net_income"], accounts["interest_expense"], accounts["tax_provision"], accounts["depreciation_expense"], accounts["amortization_expense"])
         self.ebitdar = self.calculate_ebitdar(accounts["net_income"], accounts["interest_expense"], accounts["tax_provision"], accounts["depreciation_expense"], accounts["amortization_expense"], accounts["rent_expense"])
         self.roa = self.calculate_roa(accounts["net_income"], accounts["total_assets"])
         self.roe = self.calculate_roe(accounts["net_income, total_equity"])
 
-    def calculate_total_inventory (self):
-        return self.raw_materials + self.work_in_process + self.finished_goods
+    def calculate_total_inventory (self, raw_materials, work_in_process, finished_goods):
+        return raw_materials + work_in_process + finished_goods
 
     def calculate_total_gross_fixed_assets (self, land, construction_in_progress, buildings, machines_and_equipment, furniture_and_fixtures, vehicles, leasehold_improvements, capital_leases, other_fixed_assets):
         return land + construction_in_progress + buildings + machines_and_equipment + furniture_and_fixtures + vehicles + leasehold_improvements + capital_leases+ other_fixed_assets

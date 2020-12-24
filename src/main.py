@@ -213,30 +213,201 @@ def get_all_contacts():
 @jwt_required
 def save_financials():
     input_data = request.json
+    input_data['user_id'] = get_jwt_identity()
 
+    if 'cash' not in input_data:
+        input_data['cash'] = 0
+
+    if 'accounts_receivable' not in input_data:
+        input_data['accounts_receivable'] = 0
+
+    if 'raw_materials' not in input_data:
+        input_data['raw_materials'] = 0
+
+    if 'work_in_process' not in input_data:
+        input_data['work_in_process'] = 0
+
+    if 'finished_goods' not in input_data:
+        input_data['finished_goods'] = 0
+
+    if 'land' not in input_data:
+        input_data['land'] = 0
+    
+    if 'construction_in_progress' not in input_data:
+        input_data['construction_in_progress'] = 0
+
+    if 'buildings' not in input_data:
+        input_data['buildings'] = 0
+
+    if 'machines_and_equipment' not in input_data:
+        input_data['machines_and_equipment'] = 0
+
+    if 'furniture_and_fixtures' not in input_data:
+        input_data['furniture_and_fixtures'] = 0
+    
+    if 'vehicles' not in input_data:
+        input_data['vehicles'] = 0
+
+    if 'leasehold_improvements' not in input_data:
+        input_data['leasehold_improvements'] = 0
+
+    if 'capital_leases' not in input_data:
+        input_data['capital_leases'] = 0
+
+    if 'other_fixed_assets' not in input_data:
+        input_data['other_fixed_assets'] = 0
+    
+    if 'accumulated_depreciation' not in input_data:
+        input_data['accumulated_depreciation'] = 0
+
+    if 'other_operating_assets' not in input_data:
+        input_data['other_operating_assets'] = 0
+
+    if 'goodwill' not in input_data:
+        input_data['goodwill'] = 0
+
+    if 'other_intangibles' not in input_data:
+        input_data['other_intangibles'] = 0
+    
+    if 'accumulated_amortization' not in input_data:
+        input_data['accumulated_amortization'] = 0
+
+    if 'other_non_operating_assets' not in input_data:
+        input_data['other_non_operating_assets'] = 0
+    
+    if 'short_term_debt_secured' not in input_data:
+        input_data['short_term_debt_secured'] = 0
+
+    if 'short_term_debt_unsecured' not in input_data:
+        input_data['short_term_debt_unsecured'] = 0
+
+    if 'cpltd_secured' not in input_data:
+        input_data['cpltd_secured'] = 0
+
+    if 'cpltd_unsecured' not in input_data:
+        input_data['cpltd_unsecured'] = 0
+    
+    if 'other_notes_payable' not in input_data:
+        input_data['other_notes_payable'] = 0
+
+    if 'accounts_payable_trade' not in input_data:
+        input_data['accounts_payable_trade'] = 0 
+
+    if 'other_current_liabilities' not in input_data:
+        input_data['other_current_liabilities'] = 0
+
+    if 'ltd_secured' not in input_data:
+        input_data['ltd_secured'] = 0
+
+    if 'ltd_unsecured' not in input_data:
+        input_data['ltd_unsecured'] = 0
+
+    if 'other_lt_notes_payable' not in input_data:
+        input_data['other_lt_notes_payable'] = 0
+    
+    if 'other_operating_liabilities' not in input_data:
+        input_data['other_operating_liabilities'] = 0
+
+    if 'other_non_operating_liabilities' not in input_data:
+        input_data['other_non_operating_liabilities'] = 0
+    
+    if 'common_stock' not in input_data:
+        input_data['common_stock'] = 0
+
+    if 'additional_paid_in_capital' not in input_data:
+        input_data['additional_paid_in_capital'] = 0
+
+    if 'retained_earnings' not in input_data:
+        input_data['retained_earnings'] = 0
+
+    if 'total_revenue' not in input_data:
+        input_data['total_revenue'] = 0
+    
+    if 'total_cogs' not in input_data:
+        input_data['total_cogs'] = 0
+
+    if 'sga_expenses' not in input_data:
+        input_data['sga_expenses'] = 0 
+
+    if 'rent_expense' not in input_data:
+        input_data['rent_expense'] = 0
+
+    if 'depreciation_expense' not in input_data:
+        input_data['depreciation_expense'] = 0
+
+    if 'amortization_expense' not in input_data:
+        input_data['amortization_expense'] = 0
+    
+    if 'bad_debt_expense' not in input_data:
+        input_data['bad_debt_expense'] = 0
+
+    if 'other_operating_expenses' not in input_data:
+        input_data['other_operating_expenses'] = 0 
+
+    if 'interest_expense' not in input_data:
+        input_data['interest_expense'] = 0
+
+    if 'interest_income' not in input_data:
+        input_data['interest_income'] = 0
+
+    if 'other_non_operating_income_expense' not in input_data:
+        input_data['other_non_operating_income_expense'] = 0
+    
+    if 'tax_provision' not in input_data:
+        input_data['tax_provision'] = 0
+
+    if 'distributions' not in input_data:
+        input_data['distributions'] = 0
+
+    if 'statement_date' in input_data and 'quality' in input_data and 'fye_month' in input_data and 'fye_day' in input_data and 'prepared_by' in input_data:
+        new_financial = Financials( accounts=input_data )
+        db.session.add(new_financial)
+        # You will have to format the following code accordingly
+        try:
+            db.session.commit()
+            # the response dictionary needs to be worked - maybe serialize the values of new_financial to give the values they want?
+
+            response={
+                'financial' : new_financial.serialize()
+            }
+            return jsonify(response),200
+
+        except Exception as error:
+            db.session.rollback()
+            # don't forget to set the error value
+            return jsonify({"msg" : error}),500
+    else:
+        return jsonify({"msg" : "information required missing"}),400    
+    
     # Do Validation
     # Make sure to check all required columns are set
     # look at line 80
     # And make sure you assign user_id to input_data['user_id']
 
-    new_financial = Financials( accounts=input_data )
-    db.session.add(new_financial)
     
-    # You will have to format the following code accordingly
-    try:
-        db.session.commit()
-        # the response dictionary needs to be worked - maybe serialize the values of new_financial to give the values they want?
+    
 
-        response={
-            'financial' : new_financial
-        }
-        return jsonify(response),200
+@app.route('/financials', methods=['GET'])
+def getStatements():
+    statement_query = Statement.query.all()
+    all_statements = list(map(lambda x: x.serialize(), statement_query))
+    response_body = all_statements
 
-    except Exception as error:
-        db.session.rollback()
-        # don't forget to set the error value
-        return jsonify({"msg" : error}),500
+    return jsonify(response_body), 200
 
+@app.route('/financials/<int:id>', methods=['DELETE'])
+def deleteStatement(id):
+    statement = Statement.query.get(id)
+    if statement is None:
+        raise APIException('Statement not found', status_code=404)
+    db.session.delete(statement)
+    db.session.commit()
+    return "ok", 200 
+
+# this only runs if `$ python src/main.py` is executed
+if __name__ == '__main__':
+    PORT = int(os.environ.get('PORT', 3000))
+    app.run(host='0.0.0.0', port=PORT, debug=False)
 
 
 
