@@ -209,6 +209,12 @@ def get_all_contacts():
         contacts_list = list(map(lambda each: each.serialize(), contacts_query))
         return jsonify(contacts_list), 200
 
+@app.route('/organizations', methods=['GET'])
+def get_all_organizations():
+        contacts_query = Organizations.query.all()
+        organizations_list = list(map(lambda each: each.serialize(), contacts_query))
+        return jsonify(organizations_list), 200
+
 
 
 # EBIDA = Earnings Before Interest Depreciation and Amortization

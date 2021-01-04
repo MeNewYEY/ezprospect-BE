@@ -60,7 +60,7 @@ class Prospects(db.Model):
     phone_number = db.Column(db.String(250), unique=False, nullable=False)
     account = db.Column(db.String(250), unique=False, nullable=False)
     # background = db.Column(db.String(80), unique=False, nullable=False)
-    created_at = db.Column(db.String(80), unique=False, nullable=False) 
+    created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
 
     def __init__(self,name,industry,address1,city,state,zipCode,phone_number,account):
@@ -72,7 +72,7 @@ class Prospects(db.Model):
         self.zipCode=zipCode
         self.phone_number=phone_number
         self.account=account
-        self.created_at = datetime.datetime.now()
+        self.created_at = datetime.now()
         self.is_active=True 
 
     def __repr__(self):
@@ -101,7 +101,7 @@ class Contacts(db.Model):
     email = db.Column(db.String(250), unique=False, nullable=False)
     phone_number = db.Column(db.String(250), unique=False, nullable=False)
     prospectscontacts = db.relationship('Prospects', secondary=prospects_contacts, backref=db.backref('prospectscontacts', lazy='dynamic'))
-    created_at = db.Column(db.String(80), unique=False, nullable=False)  
+    created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False) 
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)    
 
     def __init__(self,first_name,last_name,position,title,email,phone_number):
@@ -111,7 +111,7 @@ class Contacts(db.Model):
         self.title=title
         self.email=email
         self.phone_number=phone_number
-        self.created_at = datetime.datetime.now()
+        self.created_at = datetime.now()
         self.is_active=True 
 
     def __repr__(self):
