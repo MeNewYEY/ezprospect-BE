@@ -66,7 +66,7 @@ def login():
             }
             return jsonify(response),200 
         else:
-            return jsonify({"msg" : "Bad credentials"}),400
+            return jsonify({"msg" : "Wrong Password"}),400
 
     else:
         return jsonify({"msg" : "User not found"}),400
@@ -74,43 +74,66 @@ def login():
 
 @app.route('/signup', methods=['POST'])
 def handle_signup():
+    
     input_data = request.json
 
-    if 'email' in input_data and 'password' in input_data and 'first_name' in input_data and 'last_name' in input_data and 'phone_number' in input_data:
+    params = request.get_json()
+    email = params.get('email', None)
+    password = params.get('password', None)
+    first_name = params.get('first_name', None)
+    last_name = params.get('last_name', None)
+    phone_number = params.get('phone_number', None)
+    organization_id = params.get('organization_id', None)
 
-        specific_user = User.query.filter_by(
-            email=input_data['email']
-        ).one_or_none()
+    if not email:
+        return jsonify({"msg" : "Missing email"}),400
 
-        organization = Organizations.query.get(input_data['organization_id'])
+    if not password:
+        return jsonify({"msg" : "Missing password"}),400
+    
+    if not first_name:
+        return jsonify({"msg" : "Missing first name"}),400
+    
+    if not last_name:
+        return jsonify({"msg" : "Missing last name"}),400
+    
+    if not phone_number:
+        return jsonify({"msg" : "Missing phone number"}),400
+
+    
+
+    # if 'email' in input_data and 'password' in input_data and 'first_name' in input_data and 'last_name' in input_data and 'phone_number' in input_data and 'organization_id' in input_data:
+
+    specific_user = User.query.filter_by(
+        email=input_data['email']
+    ).one_or_none()
+
+    organization = Organizations.query.get(input_data['organization_id'])
 
 
-        if isinstance(specific_user,User):
-            return jsonify({"msg" : "email already in use"}),400
-        else:
-            new_user= User(
-                email = input_data['email'],
-                password = sha256_crypt.encrypt(str(input_data['password'])),
-                first_name = input_data['first_name'],
-                last_name = input_data['last_name'],
-                phone_number = input_data['phone_number']
-            )
-            organization.users.append(new_user)
-            db.session.add(new_user)
-            try:
-                db.session.commit()
-                response={
-                    "jwt" : create_jwt(identity=new_user.id),
-                    "user_id": new_user.id
-                }
-                return jsonify(response),200
-
-            except Exception as error:
-                db.session.rollback()
-                return jsonify({"msg" : error}),500
-
+    if isinstance(specific_user,User):
+        return jsonify({"msg" : "Email already in use"}),400
     else:
-        return jsonify({"msg" : "information required missing"}),400
+        new_user= User(
+            email = input_data['email'],
+            password = sha256_crypt.encrypt(str(input_data['password'])),
+            first_name = input_data['first_name'],
+            last_name = input_data['last_name'],
+            phone_number = input_data['phone_number']
+        )
+        organization.users.append(new_user)
+        db.session.add(new_user)
+        try:
+            db.session.commit()
+            response={
+                "jwt" : create_jwt(identity=new_user.id),
+                "user_id": new_user.id
+            }
+            return jsonify(response),200
+
+        except Exception as error:
+            db.session.rollback()
+            return jsonify({"msg" : error}),500
 
 @app.route('/protected', methods=['GET'])
 @jwt_required
