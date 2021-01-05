@@ -10,7 +10,7 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 # from datetime import date, time, datetime
-from models import db, User, Prospects, Contacts, Organizations
+from models import db, User, Prospects, Contacts, Organizations, Financials
 from flask_jwt_simple import (JWTManager, jwt_required, create_jwt, get_jwt_identity)
 from passlib.hash import sha256_crypt
 
@@ -239,7 +239,7 @@ def get_all_organizations():
         return jsonify(organizations_list), 200
 
 @app.route('/financials', methods=['POST'])
-@jwt_required
+# @jwt_required
 def save_financials():
     input_data = request.json
     input_data['user_id'] = get_jwt_identity()
