@@ -10,7 +10,7 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 # from datetime import date, time, datetime
-from models import db, User, Prospects, Contacts, Organizations, Financials
+from models import db, User, Prospects, Contacts, Financials
 from flask_jwt_simple import (JWTManager, jwt_required, create_jwt, get_jwt_identity)
 from passlib.hash import sha256_crypt
 
@@ -83,7 +83,6 @@ def handle_signup():
     first_name = params.get('first_name', None)
     last_name = params.get('last_name', None)
     phone_number = params.get('phone_number', None)
-    organization_id = params.get('organization_id', None)
 
     if not email:
         return jsonify({"msg" : "Missing email"}),400
@@ -102,13 +101,11 @@ def handle_signup():
 
     
 
-    # if 'email' in input_data and 'password' in input_data and 'first_name' in input_data and 'last_name' in input_data and 'phone_number' in input_data and 'organization_id' in input_data:
+    # if 'email' in input_data and 'password' in input_data and 'first_name' in input_data and 'last_name' in input_data and 'phone_number' in input_data:
 
     specific_user = User.query.filter_by(
         email=input_data['email']
     ).one_or_none()
-
-    organization = Organizations.query.get(input_data['organization_id'])
 
 
     if isinstance(specific_user,User):
@@ -121,7 +118,7 @@ def handle_signup():
             last_name = input_data['last_name'],
             phone_number = input_data['phone_number']
         )
-        organization.users.append(new_user)
+        
         db.session.add(new_user)
         try:
             db.session.commit()
@@ -231,12 +228,6 @@ def get_all_contacts():
         # contacts_query = Contacts.query.filter(Contacts.prospectscontacts.any(id=user_id)).all()
         contacts_list = list(map(lambda each: each.serialize(), contacts_query))
         return jsonify(contacts_list), 200
-
-@app.route('/organizations', methods=['GET'])
-def get_all_organizations():
-        contacts_query = Organizations.query.all()
-        organizations_list = list(map(lambda each: each.serialize(), contacts_query))
-        return jsonify(organizations_list), 200
 
 @app.route('/financials', methods=['POST'])
 def save_financials():
