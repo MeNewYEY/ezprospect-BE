@@ -24,7 +24,6 @@ class User(db.Model):
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
     userprospects = db.relationship('Prospects', secondary=user_prospects, backref=db.backref('prospectsuser', lazy='dynamic'))   
     created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
-    # organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'))
 
     def __init__(self,email,password,first_name,last_name,phone_number):
         self.email=email
@@ -45,7 +44,6 @@ class User(db.Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "phone_number": self.phone_number
-            # "organization_id": self.organization_id
             # do not serialize the password, its a security breach
         }
 
@@ -135,8 +133,6 @@ class Clients(db.Model):
     # prospect = relationship(Prospects)
     # user_id = db.Column(Integer, ForeignKey('user.user_id'))
     # user = relationship(User)
-    # organization_id = db.Column(Integer, ForeignKey('organization.organization_id'))
-    # organization = relationship(Organization)
     # product_id = db.Column(Integer, ForeignKey('product.product_id'))
     # product = relationship(Product)
 
@@ -165,7 +161,7 @@ class Products(db.Model):
     name = db.Column(db.String(250), unique=False, nullable=False)
     description = db.Column(db.String(250), unique=False, nullable=False)
     status = db.Column(db.Boolean(), unique=False, nullable=False)
-    # organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'))
+   
 
     def __init__(self,name,description):
         self.name=name
@@ -182,47 +178,6 @@ class Products(db.Model):
             "description": self.description
             # do not serialize the password, its a security breach
         }
-
-
-# class Organizations(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(120), unique=True, nullable=False)
-#     address1 = db.Column(db.String(80), unique=False, nullable=False)
-#     address2 = db.Column(db.String(80), unique=False, nullable=False)
-#     city = db.Column(db.String(80), unique=False, nullable=False)
-#     state = db.Column(db.String(80), unique=False, nullable=False)
-#     zipCode = db.Column(db.Integer, unique=False, nullable=False)
-#     phone_number = db.Column(db.String(50), unique=False, nullable=False)
-#     users = db.relationship('User', backref="organizations")
-#     products = db.relationship('Products', backref="organizations")
-    
-
-#     def __init__(self,name,address1,address2,city,state,zipCode,phone_number):
-#         self.name=name
-#         self.address1=address1
-#         self.address2=address2
-#         self.city=city
-#         self.state=state
-#         self.zipCode=zipCode
-#         self.phone_number=phone_number
-#         self.is_active=True 
-
-#     def __repr__(self):
-#         return '<Organizations %r>' % self.id
-
-#     def serialize(self):
-#         return {
-#             "id": self.id,
-#             "name": self.name,
-#             "address1": self.address1,
-#             "address2": self.address2,
-#             "city": self.city,
-#             "state": self.state,
-#             "zipCode": self.zipCode,
-#             "phone_number": self.phone_number,
-#             "users": list(map(lambda x: x.serialize(), self.users))
-#             # do not serialize the password, its a security breach
-#         }
 
 class Financials(db.Model):
     id = db.Column(db.Integer, primary_key=True)

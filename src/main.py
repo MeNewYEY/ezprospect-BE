@@ -10,7 +10,7 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 # from datetime import date, time, datetime
-from models import db, User, Prospects, Contacts, Organizations, Financials
+from models import db, User, Prospects, Contacts, Financials
 from flask_jwt_simple import (JWTManager, jwt_required, create_jwt, get_jwt_identity)
 from passlib.hash import sha256_crypt
 
@@ -101,13 +101,11 @@ def handle_signup():
 
     
 
-    # if 'email' in input_data and 'password' in input_data and 'first_name' in input_data and 'last_name' in input_data and 'phone_number' in input_data and 'organization_id' in input_data:
+    # if 'email' in input_data and 'password' in input_data and 'first_name' in input_data and 'last_name' in input_data and 'phone_number' in input_data:
 
     specific_user = User.query.filter_by(
         email=input_data['email']
     ).one_or_none()
-
-    # organization = Organizations.query.get(input_data['organization_id'])
 
 
     if isinstance(specific_user,User):
@@ -231,17 +229,11 @@ def get_all_contacts():
         contacts_list = list(map(lambda each: each.serialize(), contacts_query))
         return jsonify(contacts_list), 200
 
-@app.route('/organizations', methods=['GET'])
-def get_all_organizations():
-        contacts_query = Organizations.query.all()
-        organizations_list = list(map(lambda each: each.serialize(), contacts_query))
-        return jsonify(organizations_list), 200
-
 @app.route('/financials', methods=['POST'])
-@jwt_required
 def save_financials():
     input_data = request.json
     input_data['user_id'] = get_jwt_identity()
+    prospect_id = input_data['prospect_id']
 
     if 'cash' not in input_data:
         input_data['cash'] = 0
@@ -416,6 +408,9 @@ def save_financials():
 def getStatements():
     statement_query = Financials.query.all()
     all_statements = list(map(lambda x: x.serialize(), statement_query))
+    specific_user = User.query.filter_by(
+        user_id=input_data['user_id],
+    ).one_or_none()
     return jsonify(all_statements), 200
 
 
@@ -427,7 +422,6 @@ def deleteStatement(id):
     db.session.delete(statement)
     db.session.commit()
     return "ok", 200
-# Accounts: Checking Account (DDA), Savings Account (SAV), Money Market (MMK)--- Loans: Revolving Line of Credit (RLOC), Owner-Occupied MTG (OORE MTG mortgage), Equipment Financing
 
 
 # this only runs if `$ python src/main.py` is executed
