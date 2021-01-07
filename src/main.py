@@ -403,11 +403,16 @@ def save_financials():
     # look at line 80
     # And make sure you assign user_id to input_data['user_id']
 
-@app.route('/financials', methods=['GET'])
-def getStatements():
-    statement_query = Financials.query.all()
-    all_statements = list(map(lambda x: x.serialize(), statement_query))
-    return jsonify(all_statements), 200
+@app.route('/financials/<int:user_id>/<int:prospect_id>', methods=['GET'])
+def getStatements(user_id,prospect_id):
+
+    statement_query = Financials.query.filter_by(
+        user_id=user_id,
+        prospect_id=prospect_id
+    ).one_or_none()
+
+    financial_id = statement_query.id
+    return jsonify(financial_id), 200
 
 
 @app.route('/financials/<int:id>', methods=['DELETE'])
