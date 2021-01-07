@@ -83,7 +83,6 @@ def handle_signup():
     first_name = params.get('first_name', None)
     last_name = params.get('last_name', None)
     phone_number = params.get('phone_number', None)
-    organization_id = params.get('organization_id', None)
 
     if not email:
         return jsonify({"msg" : "Missing email"}),400
@@ -108,7 +107,7 @@ def handle_signup():
         email=input_data['email']
     ).one_or_none()
 
-    organization = Organizations.query.get(input_data['organization_id'])
+    # organization = Organizations.query.get(input_data['organization_id'])
 
 
     if isinstance(specific_user,User):
@@ -121,7 +120,7 @@ def handle_signup():
             last_name = input_data['last_name'],
             phone_number = input_data['phone_number']
         )
-        organization.users.append(new_user)
+        
         db.session.add(new_user)
         try:
             db.session.commit()
@@ -239,7 +238,7 @@ def get_all_organizations():
         return jsonify(organizations_list), 200
 
 @app.route('/financials', methods=['POST'])
-# @jwt_required
+@jwt_required
 def save_financials():
     input_data = request.json
     input_data['user_id'] = get_jwt_identity()
