@@ -3,15 +3,15 @@ from datetime import date, time, datetime
 
 db = SQLAlchemy()
 
-user_prospects = db.Table('user_prospects',
-    db.Column("user_id", db.Integer, db.ForeignKey("user.id"), primary_key=True),
-    db.Column("prospect_id", db.Integer, db.ForeignKey("prospects.id"), primary_key=True)
-)
+# user_prospects = db.Table('user_prospects',
+#     db.Column("user_id", db.Integer, db.ForeignKey("user.id"), primary_key=True),
+#     db.Column("prospect_id", db.Integer, db.ForeignKey("prospects.id"), primary_key=True)
+# )
 
-prospects_contacts = db.Table('prospects_contacts',
-    db.Column("contact_id", db.Integer, db.ForeignKey("contacts.id"), primary_key=True),
-    db.Column("prospect_id", db.Integer, db.ForeignKey("prospects.id"), primary_key=True)
-)
+# prospects_contacts = db.Table('prospects_contacts',
+#     db.Column("contact_id", db.Integer, db.ForeignKey("contacts.id"), primary_key=True),
+#     db.Column("prospect_id", db.Integer, db.ForeignKey("prospects.id"), primary_key=True)
+# )
 
 
 class User(db.Model):
@@ -22,7 +22,7 @@ class User(db.Model):
     last_name = db.Column(db.String(250), unique=False, nullable=False)
     phone_number = db.Column(db.String(50), unique=False, nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
-    userprospects = db.relationship('Prospects', secondary=user_prospects, backref=db.backref('prospectsuser', lazy='dynamic'))   
+    prospects = db.relationship('Prospect', backref='user', lazy='dynamic')   
     created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
 
     def __init__(self,email,password,first_name,last_name,phone_number):
@@ -47,8 +47,9 @@ class User(db.Model):
             # do not serialize the password, its a security breach
         }
 
-class Prospects(db.Model):
+class Prospect(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     name = db.Column(db.String(250), unique=True, nullable=False)
     industry = db.Column(db.String(250), unique=False, nullable=False)
     address1 = db.Column(db.String(250), unique=False, nullable=False)
@@ -60,8 +61,11 @@ class Prospects(db.Model):
     # background = db.Column(db.String(80), unique=False, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
+    contacts = db.relationship('Contact', backref='prospect', lazy='dynamic')
+    financials = db.relationship('Financial', backref='prospect', lazy='dynamic')
 
-    def __init__(self,name,industry,address1,city,state,zipCode,phone_number,account):
+    def __init__(self,user_id,name,industry,address1,city,state,zipCode,phone_number,account):
+        self.user_id=user_id
         self.name=name
         self.industry=industry
         self.address1=address1
@@ -74,11 +78,12 @@ class Prospects(db.Model):
         self.is_active=True 
 
     def __repr__(self):
-        return '<Prospects %r>' % self.account
+        return '<Prospect %r>' % self.account
 
     def serialize(self):
         return {
             "id": self.id,
+            "user_id": self.user_id,
             "name": self.name,
             "industry": self.industry,
             "address1": self.address1,
@@ -90,19 +95,21 @@ class Prospects(db.Model):
             # do not serialize the password, its a security breach
         }
 
-class Contacts(db.Model):
+class Contact(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    prospect_id = db.Column(db.Integer, db.ForeignKey("prospect.id"))
     first_name = db.Column(db.String(250), unique=True, nullable=False)
     last_name = db.Column(db.String(250), unique=False, nullable=False)
     position = db.Column(db.String(250), unique=False, nullable=False)
     title = db.Column(db.String(250), unique=False, nullable=False)
     email = db.Column(db.String(250), unique=False, nullable=False)
     phone_number = db.Column(db.String(250), unique=False, nullable=False)
-    prospectscontacts = db.relationship('Prospects', secondary=prospects_contacts, backref=db.backref('prospectscontacts', lazy='dynamic'))
+    # prospectscontacts = db.relationship('Prospect', secondary=prospects_contacts, backref=db.backref('prospectscontacts', lazy='dynamic'))
     created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False) 
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)    
 
-    def __init__(self,first_name,last_name,position,title,email,phone_number):
+    def __init__(self,prospect_id,first_name,last_name,position,title,email,phone_number):
+        self.prospect_id=prospect_id
         self.first_name=first_name
         self.last_name=last_name
         self.position=position
@@ -113,11 +120,12 @@ class Contacts(db.Model):
         self.is_active=True 
 
     def __repr__(self):
-        return '<Contacts %r>' % self.id
+        return '<Contact %r>' % self.id
 
     def serialize(self):
         return {
             "id": self.id,
+            "prospect_id": self.prospect_id,
             "first_name": self.first_name,
             "last_name": self.last_name,
             "position": self.position,
@@ -179,10 +187,9 @@ class Products(db.Model):
             # do not serialize the password, its a security breach
         }
 
-class Financials(db.Model):
+class Financial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    prospect_id = db.Column(db.Integer, unique=False)
-    user_id = db.Column(db.Integer)
+    prospect_id = db.Column(db.Integer, db.ForeignKey ("prospect.id"))
     statement_date = db.Column(db.Integer)
     quality = db.Column(db.Integer)
     fye_month = db.Column(db.Integer)
@@ -269,7 +276,6 @@ class Financials(db.Model):
 
     def __init__(self,accounts):
         self.prospect_id = accounts["prospect_id"]
-        self.user_id = accounts["user_id"]
         self.statement_date = accounts["statement_date"]
         self.quality = accounts["quality"]
         self.fye_month = accounts["fye_month"]
@@ -445,13 +451,12 @@ class Financials(db.Model):
         return net_income / total_equity
 
     def __repr__(self):
-        return '<Financials %r>' % self.id
+        return '<Financial %r>' % self.id
     
     def serialize(self):
         return {
             # do not serialize the password, its a security breach
             "prospect_id": self.prospect_id,
-            "user_id": self.user_id,
             "statement_date": self.statement_date,
             "quality": self.quality,
             "fye_month": self.fye_month,

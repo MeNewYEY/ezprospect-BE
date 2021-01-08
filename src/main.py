@@ -10,7 +10,7 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 # from datetime import date, time, datetime
-from models import db, User, Prospects, Contacts, Financials
+from models import db, User, Prospect, Contact, Financial
 from flask_jwt_simple import (JWTManager, jwt_required, create_jwt, get_jwt_identity)
 from passlib.hash import sha256_crypt
 
@@ -147,69 +147,75 @@ def protected():
         return jsonify(specific_user.serialize()),200
 
 @app.route('/addProspect', methods=['POST'])
+@jwt_required
 def add_prospect():
     input_data = request.json 
-    user_id = input_data['user_id']
+    user_id = get_jwt_identity()
 
-    new_prospect= Prospects(
-        name = input_data['name'],
-        industry = input_data['industry'],
-        address1 = input_data['address1'],
-        city = input_data['city'],
-        state = input_data['state'],
-        zipCode = input_data['zipCode'],
-        phone_number = input_data['phone_number'],
-        account = input_data['account']
-    )
+    # user = User.query.filter_by(
+    #     id=user_id
+    # ).one_or_none()    
 
-    user = User.query.filter_by(
-        id=user_id
-    ).one_or_none()    
-
-    specific_prospect = Prospects.query.filter_by(
+    specific_prospect = Prospect.query.filter_by(
+        user_id=user_id,
         account=input_data['account']
     ).one_or_none()
 
-    if isinstance(specific_prospect,Prospects):
-        prospect_id = specific_prospect.id
-        prospects_query = User.query.filter(User.userprospects.any(id=prospect_id)).filter(Prospects.prospectsuser.any(id=user_id)).all()
-        prospects_list = list(filter(lambda each: each.id==user_id, prospects_query))
-        if not prospects_list:
-            specific_prospect.prospectsuser.append(user)
-            db.session.commit() 
-            return jsonify(input_data),200
-        else:
-            return jsonify({"msg" : "prospect already created"}),400
-    else:   
+    if isinstance(specific_prospect,Prospect):
+        # prospect_id = specific_prospect.id
+        # prospects_query = User.query.filter(User.userprospects.any(id=prospect_id)).filter(Prospect.prospectsuser.any(id=user_id)).all()
+        # prospects_list = list(filter(lambda each: each.id==user_id, prospects_query))
+        # if not prospects_list:
+        #     specific_prospect.prospectsuser.append(user)
+        #     db.session.commit() 
+        #     return jsonify(input_data),200
+        # else:
+        return jsonify({"msg" : "prospect already created"}),400
+    else:
+        new_prospect= Prospect(
+            user_id = user_id,
+            name = input_data['name'],
+            industry = input_data['industry'],
+            address1 = input_data['address1'],
+            city = input_data['city'],
+            state = input_data['state'],
+            zipCode = input_data['zipCode'],
+            phone_number = input_data['phone_number'],
+            account = input_data['account']
+        )
         db.session.add(new_prospect)
-        user.userprospects.append(new_prospect)
+        # user.userprospects.append(new_prospect)
         db.session.commit()             
-        return jsonify(input_data),200
+        return jsonify(new_prospect.serialize()),200
 
 @app.route('/prospects/<int:user_id>', methods=['GET'])
 def get_all_prospects(user_id):
-        prospects_query = Prospects.query.filter(Prospects.prospectsuser.any(id=user_id)).all()
+        prospects_query = Prospect.query.filter(Prospect.prospectsuser.any(id=user_id)).all()
         prospects_list = list(map(lambda each: each.serialize(), prospects_query))
         return jsonify(prospects_list), 200
 
 
 @app.route('/addContact', methods=['POST'])
+@jwt_required
 def addContact():
     input_data = request.json
+    user_id = get_jwt_identity()
 
-    prospect_account = Prospects.query.filter_by(
-        account=input_data['account']
+    prospect_account = Prospect.query.filter_by(
+        account=input_data['account'],
+        user_id=user_id
     ).one_or_none()
 
-    specific_contact = Contacts.query.filter_by(
+    specific_contact = Contact.query.filter_by(
         first_name=input_data['first_name'],
         last_name=input_data['last_name']
     ).one_or_none()
 
-    if isinstance(specific_contact,Contacts):
+    if isinstance(specific_contact,Contact):
         return jsonify({"msg" : "contact already created"}),400
     else:
-        new_contact= Contacts(
+        new_contact= Contact(
+            prospect_id= prospect_account.id,
             first_name = input_data['first_name'],
             last_name = input_data['last_name'],
             position = input_data['position'],
@@ -218,14 +224,14 @@ def addContact():
             phone_number = input_data['phone_number']
         )
         db.session.add(new_contact)
-        new_contact.prospectscontacts.append(prospect_account)
+        # new_contact.prospectscontacts.append(prospect_account)
         db.session.commit()            
-        return jsonify(input_data),200
+        return jsonify(new_contact.serialize()),200
 
 @app.route('/contacts', methods=['GET'])
 def get_all_contacts():
-        contacts_query = Contacts.query.all()
-        # contacts_query = Contacts.query.filter(Contacts.prospectscontacts.any(id=user_id)).all()
+        contacts_query = Contact.query.all()
+        # contacts_query = Contact.query.filter(Contact.prospectscontacts.any(id=user_id)).all()
         contacts_list = list(map(lambda each: each.serialize(), contacts_query))
         return jsonify(contacts_list), 200
 
@@ -380,7 +386,7 @@ def save_financials():
         input_data['distributions'] = 0
 
     if 'statement_date' in input_data and 'quality' in input_data and 'fye_month' in input_data and 'fye_day' in input_data and 'prepared_by' in input_data:
-        new_financial = Financials( accounts=input_data )
+        new_financial = Financial( accounts=input_data )
         db.session.add(new_financial)
         # You will have to format the following code accordingly
         try:
@@ -404,19 +410,20 @@ def save_financials():
     # look at line 80
     # And make sure you assign user_id to input_data['user_id']
 
-@app.route('/financials', methods=['GET'])
-def getStatements():
-    statement_query = Financials.query.all()
-    all_statements = list(map(lambda x: x.serialize(), statement_query))
-    specific_user = User.query.filter_by(
-        user_id=input_data['user_id],
+@app.route('/financials/<int:user_id>/<int:prospect_id>', methods=['GET'])
+def getStatements(user_id,prospect_id):
+
+    statement_query = Financial.query.filter_by(
+        prospect_id=prospect_id
     ).one_or_none()
-    return jsonify(all_statements), 200
+
+    financial_id = statement_query.id
+    return jsonify(financial_id), 200
 
 
 @app.route('/financials/<int:id>', methods=['DELETE'])
 def deleteStatement(id):
-    statement = Financials.query.get(id)
+    statement = Financial.query.get(id)
     if statement is None:
         raise APIException('Statement not found', status_code=404)
     db.session.delete(statement)
