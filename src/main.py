@@ -190,7 +190,7 @@ def add_prospect():
 
 @app.route('/prospects/<int:user_id>', methods=['GET'])
 def get_all_prospects(user_id):
-        prospects_query = Prospect.query.filter(Prospect.prospectsuser.any(id=user_id)).all()
+        prospects_query = Prospect.query.filter_by(user_id=user_id).all()
         prospects_list = list(map(lambda each: each.serialize(), prospects_query))
         return jsonify(prospects_list), 200
 
