@@ -57,11 +57,13 @@ class Prospects(db.Model):
     zipCode = db.Column(db.String(250), unique=False, nullable=False)
     phone_number = db.Column(db.String(250), unique=False, nullable=False)
     account = db.Column(db.String(250), unique=False, nullable=False)
+    lat = db.Column(db.String(250), nullable=False)
+    lon = db.Column(db.String(250), nullable=False)
     # background = db.Column(db.String(80), unique=False, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
 
-    def __init__(self,name,industry,address1,city,state,zipCode,phone_number,account):
+    def __init__(self,name,industry,address1,city,state,zipCode,phone_number,account,lat,lon):
         self.name=name
         self.industry=industry
         self.address1=address1
@@ -70,11 +72,13 @@ class Prospects(db.Model):
         self.zipCode=zipCode
         self.phone_number=phone_number
         self.account=account
+        self.lat=lat
+        self.lon=lon
         self.created_at = datetime.now()
         self.is_active=True 
 
     def __repr__(self):
-        return '<Prospects %r>' % self.account
+        return f'<Prospects {self.id},{self.account}>'
 
     def serialize(self):
         return {
@@ -86,29 +90,33 @@ class Prospects(db.Model):
             "state": self.state,
             "zipCode": self.zipCode,
             "phone_number": self.phone_number,
-            "account": self.account
+            "account": self.account,
+            "lat": self.lat,
+            "lon": self.lon
             # do not serialize the password, its a security breach
         }
 
 class Contacts(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(250), unique=True, nullable=False)
-    last_name = db.Column(db.String(250), unique=False, nullable=False)
+    first_name = db.Column(db.String(250), nullable=False)
+    last_name = db.Column(db.String(250), nullable=False)
     position = db.Column(db.String(250), unique=False, nullable=False)
     title = db.Column(db.String(250), unique=False, nullable=False)
     email = db.Column(db.String(250), unique=False, nullable=False)
     phone_number = db.Column(db.String(250), unique=False, nullable=False)
+    user_id = db.Column(db.Integer,nullable=False)
     prospectscontacts = db.relationship('Prospects', secondary=prospects_contacts, backref=db.backref('prospectscontacts', lazy='dynamic'))
-    created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False) 
+    created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False,) 
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)    
 
-    def __init__(self,first_name,last_name,position,title,email,phone_number):
+    def __init__(self,first_name,last_name,position,title,email,phone_number,user_id):
         self.first_name=first_name
         self.last_name=last_name
         self.position=position
         self.title=title
         self.email=email
         self.phone_number=phone_number
+        self.user_id=user_id
         self.created_at = datetime.now()
         self.is_active=True 
 
@@ -123,7 +131,8 @@ class Contacts(db.Model):
             "position": self.position,
             "title": self.title,
             "email": self.email,
-            "phone_number": self.phone_number
+            "phone_number": self.phone_number,
+            "user_id": self.user_id,
         }
 
 class Clients(db.Model):
