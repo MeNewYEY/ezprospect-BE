@@ -201,6 +201,7 @@ class Financial(db.Model):
     work_in_process = db.Column(db.Numeric, unique=False, nullable=False)
     finished_goods = db.Column(db.Numeric, unique=False, nullable=False)
     total_inventory = db.Column(db.Numeric, unique=False, nullable=False)
+    total_current_assets = db.Column(db.Numeric, unique=False, nullable=False)
     land = db.Column(db.Numeric, unique=False, nullable=False)
     construction_in_progress = db.Column(db.Numeric, unique=False, nullable=False)
     buildings = db.Column(db.Numeric, unique=False, nullable=False)
@@ -241,6 +242,7 @@ class Financial(db.Model):
     additional_paid_in_capital = db.Column(db.Numeric, unique=False, nullable=False)
     retained_earnings = db.Column(db.Numeric, unique=False, nullable=False)
     total_equity = db.Column(db.Numeric, unique=False, nullable=False)
+    liabilities_and_equity = db.Column(db.Numeric, unique=False, nullable=False)
     tangible_net_worth = db.Column(db.Numeric, unique=False, nullable=False)
     working_capital = db.Column(db.Numeric, unique=False, nullable=False)
     current_ratio = db.Column(db.Numeric, unique=False, nullable=False)
@@ -261,8 +263,8 @@ class Financial(db.Model):
     operating_profit_margin = db.Column(db.Numeric, unique=False, nullable=False)
     interest_expense = db.Column(db.Numeric, unique=False, nullable=False)
     interest_income = db.Column(db.Numeric, unique=False, nullable=False)
-    other_non_operating_income_expense = db.Column(db.Numeric, unique=False, nullable=False)
-    total_non_operating_income_expense = db.Column(db.Numeric, unique=False, nullable=False)
+    other_income_expense = db.Column(db.Numeric, unique=False, nullable=False)
+    total_other_income_expense = db.Column(db.Numeric, unique=False, nullable=False)
     total_profit_before_taxes = db.Column(db.Numeric, unique=False, nullable=False)
     tax_provision = db.Column(db.Numeric, unique=False, nullable=False)
     net_income = db.Column(db.Numeric, unique=False, nullable=False)
@@ -287,6 +289,7 @@ class Financial(db.Model):
         self.work_in_process = accounts["work_in_process"]
         self.finished_goods = accounts["finished_goods"]
         self.total_inventory = self.calculate_total_inventory(accounts["raw_materials"], accounts["work_in_process"], accounts["finished_goods"])
+        self.total_current_assets = self.calculate_total_current_assets(accounts["cash"], accounts["accounts_receivable"], accounts["total_inventory"])
         self.land = accounts["land"]
         self.construction_in_progress = accounts["construction_in_progress"]
         self.buildings = accounts["buildings"]
@@ -327,6 +330,7 @@ class Financial(db.Model):
         self.additional_paid_in_capital = accounts["additional_paid_in_capital"]
         self.retained_earnings = accounts["retained_earnings"]
         self.total_equity = self.calculate_total_equity(accounts["common_stock"], accounts["additional_paid_in_capital"], accounts["retained_earnings"])
+        self.liabilities_and_equity = self.calculate_liabilities_and_equity(accounts["total_liabilities"], accounts["total_equity"])
         self.tangible_net_worth = self.calculate_tangible_net_worth(accounts["total_equity"], accounts["net_intangibles"])
         self.working_capital = self.calculate_working_capital(accounts["total_current_assets"], accounts["total_current_liabilities"])
         self.current_ratio = self.calculate_current_ratio(accounts["total_current_assets"], accounts["total_current_liabilities"])
@@ -347,9 +351,9 @@ class Financial(db.Model):
         self.operating_profit_margin = self.calculate_operating_profit_margin(accounts["total_operating_profit"], accounts["total_revenue"])
         self.interest_expense = accounts["interest_expense"]
         self.interest_income = accounts["interest_income"]
-        self.other_non_operating_income_expense = accounts["other_non_operating_income_expense"]
-        self.total_non_operating_income_expense = self.calculate_total_non_operating_income_expense(accounts["interest_expense"], accounts["interest_income"], accounts["other_non_operating_income_expense"])
-        self.total_profit_before_taxes = self.calculate_total_profit_before_taxes(accounts["total_operating_profit"], accounts["total_non_operating_income_expense"])
+        self.other_income_expense = accounts["other_income_expense"]
+        self.total_other_income_expense = self.calculate_total_other_income_expense(accounts["interest_expense"], accounts["interest_income"], accounts["other_income_expense"])
+        self.total_profit_before_taxes = self.calculate_total_profit_before_taxes(accounts["total_operating_profit"], accounts["total_other_income_expense"])
         self.tax_provision = accounts["tax_provision"]
         self.net_income = self.calculate_net_income(accounts["total_profit_before_taxes"], accounts["tax_provision"])
         self.net_profit_margin = self.calculate_net_profit_margin(accounts["net_income"], accounts["total_revenue"])
@@ -363,6 +367,9 @@ class Financial(db.Model):
     def calculate_total_inventory (self, raw_materials, work_in_process, finished_goods):
         return raw_materials + work_in_process + finished_goods
 
+    def calculate_total_current_assets (self, cash, accounts_receivable, total_inventory):
+        return cash + accounts_receivable + total_inventory
+    
     def calculate_total_gross_fixed_assets (self, land, construction_in_progress, buildings, machines_and_equipment, furniture_and_fixtures, vehicles, leasehold_improvements, capital_leases, other_fixed_assets):
         return land + construction_in_progress + buildings + machines_and_equipment + furniture_and_fixtures + vehicles + leasehold_improvements + capital_leases+ other_fixed_assets
 
@@ -392,6 +399,9 @@ class Financial(db.Model):
 
     def calculate_total_equity (self, common_stock, additional_paid_in_capital, retained_earnings):
         return common_stock + additional_paid_in_capital + retained_earnings
+
+    def calculate_liabilities_and_equity (self, total_liabilities, total_equity):
+        return total_liabilities + total_equity
 
     def calculate_tangible_net_worth (self, total_equity, net_intangibles):
         return total_equity - net_intangibles
@@ -423,11 +433,11 @@ class Financial(db.Model):
     def calculate_operating_profit_margin (self, total_operating_profit, total_revenue):
         return total_operating_profit / total_revenue
 
-    def calculate_total_non_operating_income_expense (self, interest_expense, interest_income, other_non_operating_income_expense):
-        return interest_expense + interest_income + other_non_operating_income_expense
+    def calculate_total_other_income_expense (self, interest_expense, interest_income, other_income_expense):
+        return interest_expense + interest_income + other_income_expense
 
-    def calculate_total_profit_before_taxes (self, total_operating_profit, total_non_operating_income_expense):
-        return total_operating_profit - total_non_operating_income_expense
+    def calculate_total_profit_before_taxes (self, total_operating_profit, total_other_income_expense):
+        return total_operating_profit - total_other_income_expense
 
     def calculate_net_income (self, total_profit_before_taxes, tax_provision):
         return total_profit_before_taxes - tax_provision
@@ -468,6 +478,7 @@ class Financial(db.Model):
             "work_in_process": self.work_in_process,
             "finished_goods": self.finished_goods,
             "total_inventory": self.total_inventory,
+            "total_current_assets": self.total_current_assets,
             "land": self.land,
             "construction_in_progress": self.construction_in_progress,
             "buildings": self.buildings,
@@ -508,6 +519,7 @@ class Financial(db.Model):
             "additional_paid_in_capital": self.additional_paid_in_capital,
             "retained_earnings": self.retained_earnings,
             "total_equity": self.total_equity,
+            "liabilities_and_equity": self.liabilities_and_equity,
             "tangible_net_worth": self.tangible_net_worth,
             "working_capital": self.working_capital,
             "current_ratio": self.current_ratio,
@@ -528,8 +540,8 @@ class Financial(db.Model):
             "operating_profit_margin": self.operating_profit_margin,
             "interest_expense": self.interest_expense,
             "interest_income": self.interest_income,
-            "other_non_operating_income_expense": self.other_non_operating_income_expense,
-            "total_non_operating_income_expense": self.total_non_operating_income_expense,
+            "other_income_expense": self.other_income_expense,
+            "total_other_income_expense": self.total_other_income_expense,
             "total_profit_before_taxes": self.total_profit_before_taxes,
             "tax_provision": self.tax_provision,
             "net_income": self.net_income,
