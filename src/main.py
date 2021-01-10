@@ -9,8 +9,8 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-# from datetime import date, time, datetime
-from models import db, User, Prospects, Contacts, Financials
+from datetime import date, time, datetime
+from models import db, User, Prospects, Contacts, Financials,BackOwner, BackCompany
 from flask_jwt_simple import (JWTManager, jwt_required, create_jwt, get_jwt_identity)
 from passlib.hash import sha256_crypt
 
@@ -100,9 +100,6 @@ def handle_signup():
         return jsonify({"msg" : "Missing phone number"}),400
 
     
-
-    # if 'email' in input_data and 'password' in input_data and 'first_name' in input_data and 'last_name' in input_data and 'phone_number' in input_data:
-
     specific_user = User.query.filter_by(
         email=input_data['email']
     ).one_or_none()
@@ -164,7 +161,7 @@ def add_prospect():
         lon = input_data['lon'],
         account = input_data['account']
     )
-
+    
     user = User.query.filter_by(
         id=user_id
     ).one_or_none()    
@@ -179,14 +176,15 @@ def add_prospect():
         prospects_list = list(filter(lambda each: each.id==user_id, prospects_query))
         if not prospects_list:
             specific_prospect.prospectsuser.append(user)
+            db.session.add(background)
             db.session.commit() 
             return jsonify(specific_prospect.serialize()),200
         else:
             return jsonify({"msg" : "prospect already created"}),400
     else:   
         db.session.add(new_prospect)
-        user.userprospects.append(new_prospect)
-        db.session.commit()             
+        user.userprospects.append(new_prospect)           
+        db.session.commit()
         return jsonify(new_prospect.serialize()),200
 
 @app.route('/prospects/<int:user_id>', methods=['GET'])
@@ -194,6 +192,66 @@ def get_all_prospects(user_id):
     prospects_query = Prospects.query.filter(Prospects.prospectsuser.any(id=user_id)).all()
     prospects_list = list(map(lambda each: each.serialize(), prospects_query))
     return jsonify(prospects_list), 200
+
+# @app.route('/addProspect', methods=['POST'])
+# def add_prospect():
+#     input_data = request.json
+#     user_id = get_jwt_identity()
+
+@app.route('/backCompany/<int:user_id>/<int:prospect_id>', methods=['GET'])
+def get_background_Company(user_id,prospect_id):
+    specific_background = BackCompany.query.filter_by(
+        user_id=user_id,prospect_id=prospect_id
+    ).one_or_none()
+    if (not specific_background):
+        specific_background = ""
+        return specific_background
+    else:
+        return specific_background.serialize(), 200
+
+
+@app.route('/backOwner/<int:user_id>/<int:prospect_id>', methods=['GET'])
+def get_background_Owner(user_id,prospect_id):
+    specific_background = BackOwner.query.filter_by(
+        user_id=user_id,prospect_id=prospect_id
+    ).one_or_none()
+    if (not specific_background):
+        specific_background = ""
+        return specific_background
+    else:
+        return specific_background.serialize(), 200
+
+
+
+@app.route('/addBack_company', methods=['POST'])
+@jwt_required
+def addBackground_Company():
+    input_data = request.json
+    user_id = get_jwt_identity()
+
+    background = BackCompany(
+        prospect_id = input_data['prospect_id'],
+        user_id = user_id,
+        data = input_data['data']           
+    )
+    db.session.add(background)
+    db.session.commit()
+    return background.serialize()
+
+@app.route('/addBack_owner', methods=['POST'])
+@jwt_required
+def addBackground_Owner():
+    input_data = request.json
+    user_id = get_jwt_identity()
+
+    background = BackOwner(
+        prospect_id = input_data['prospect_id'],
+        user_id = user_id,
+        data = input_data['data']           
+    )
+    db.session.add(background)
+    db.session.commit()
+    return background.serialize()
 
 
 @app.route('/addContact', methods=['POST'])

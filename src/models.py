@@ -59,9 +59,9 @@ class Prospects(db.Model):
     account = db.Column(db.String(250), unique=False, nullable=False)
     lat = db.Column(db.String(250), nullable=False)
     lon = db.Column(db.String(250), nullable=False)
-    # background = db.Column(db.String(80), unique=False, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
+    
 
     def __init__(self,name,industry,address1,city,state,zipCode,phone_number,account,lat,lon):
         self.name=name
@@ -106,7 +106,7 @@ class Contacts(db.Model):
     phone_number = db.Column(db.String(250), unique=False, nullable=False)
     user_id = db.Column(db.Integer,nullable=False)
     prospectscontacts = db.relationship('Prospects', secondary=prospects_contacts, backref=db.backref('prospectscontacts', lazy='dynamic'))
-    created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False,) 
+    created_at = db.Column(db.DateTime(timezone=True), unique=False, nullable=False) 
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)    
 
     def __init__(self,first_name,last_name,position,title,email,phone_number,user_id):
@@ -135,32 +135,59 @@ class Contacts(db.Model):
             "user_id": self.user_id,
         }
 
-class Clients(db.Model):
-    id = db.Column(db.Integer, primary_key=True)      
+class BackCompany(db.Model):
+    id = db.Column(db.Integer, primary_key=True)    
+    prospect_id = db.Column(db.Integer,nullable=False)
+    user_id = db.Column(db.Integer,nullable=False)
+    data = db.Column(db.String(120), unique=True, nullable=False)
+    date = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
-    # prospect_id = db.Column(Integer, ForeignKey('prospect.prospect_id'))
-    # prospect = relationship(Prospects)
-    # user_id = db.Column(Integer, ForeignKey('user.user_id'))
-    # user = relationship(User)
-    # product_id = db.Column(Integer, ForeignKey('product.product_id'))
-    # product = relationship(Product)
 
-    def __init__(self):
-        # self.firstname=firstname
-        # self.lastname=lastname
-        # self.position=position
-        # self.title=title
-        # self.email=email
-        # self.zipCode=zipCode
-        # self.phone_number=phone_number
+    def __init__(self,prospect_id,user_id,data):
+        self.data=data
+        self.prospect_id=prospect_id
+        self.user_id=user_id
+        self.date=datetime.now()
         self.is_active=True 
 
     def __repr__(self):
-        return '<Clients %r>' % self.id
+        return '<Background %r>' % self.id
 
     def serialize(self):
         return {
-            "id": self.id
+            "id": self.id,
+            "data": self.data,
+            "prospect_id": self.prospect_id,
+            "user_id": self.user_id,
+            "date":self.date
+            # do not serialize the password, its a security breach
+        }
+class BackOwner(db.Model):
+    id = db.Column(db.Integer, primary_key=True)    
+    prospect_id = db.Column(db.Integer,nullable=False)
+    user_id = db.Column(db.Integer,nullable=False)
+    data = db.Column(db.String(120), unique=True, nullable=False)
+    date = db.Column(db.DateTime(timezone=True), unique=False, nullable=False)
+    is_active = db.Column(db.Boolean(), unique=False, nullable=False)
+
+
+    def __init__(self,prospect_id,user_id,data):
+        self.data=data
+        self.prospect_id=prospect_id
+        self.user_id=user_id
+        self.date=datetime.now()
+        self.is_active=True 
+
+    def __repr__(self):
+        return '<Background %r>' % self.id
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "data": self.data,
+            "prospect_id": self.prospect_id,
+            "user_id": self.user_id,
+            "date":self.date
             # do not serialize the password, its a security breach
         }
 
