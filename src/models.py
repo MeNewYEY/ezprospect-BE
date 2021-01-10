@@ -410,13 +410,19 @@ class Financial(db.Model):
         return total_current_assets - total_current_liabilities
     
     def calculate_current_ratio (self, total_current_assets, total_current_liabilities):
-        return total_current_assets / total_current_liabilities
+        if total_current_liabilities == 0:
+            print("Unable to calculate")
+        else:
+            return total_current_assets / total_current_liabilities
 
     def calculate_quick_ratio (self, total_current_assets, total_inventory, total_current_liabilities):
         return (total_current_assets - total_inventory) / total_current_liabilities
 
     def calculate_leverage (self, total_liabilities, total_equity):
-        return total_liabilities / total_equity
+        if total_equity == 0:
+            print("Unable to calculate")
+        else:
+            return total_liabilities / total_equity
     
     def calculate_gross_profit (self, total_revenue,total_cogs):
         return total_revenue - total_cogs
@@ -431,7 +437,10 @@ class Financial(db.Model):
         return gross_profit - total_operating_expenses
 
     def calculate_operating_profit_margin (self, total_operating_profit, total_revenue):
-        return total_operating_profit / total_revenue
+        if total_revenue == 0:
+            print(0)
+        else:    
+            return total_operating_profit / total_revenue
 
     def calculate_total_other_income_expense (self, interest_expense, interest_income, other_income_expense):
         return interest_expense + interest_income + other_income_expense
@@ -443,7 +452,10 @@ class Financial(db.Model):
         return total_profit_before_taxes - tax_provision
 
     def calculate_net_profit_margin (self, net_income, total_revenue):
-        return net_income / total_revenue
+        if total_revenue == 0:
+            print(0)
+        else:    
+            return net_income / total_revenue
 
     def calculate_ebida (self, net_income, interest_expense, depreciation_expense, amortization_expense):
         return net_income + interest_expense + depreciation_expense + amortization_expense
@@ -455,10 +467,16 @@ class Financial(db.Model):
         return net_income + interest_expense + tax_provision + depreciation_expense + amortization_expense + rent_expense
     
     def calculate_roa (self, net_income, total_assets):
-        return net_income / total_assets
+        if total_assets == 0:
+            print("Unable to calculate")
+        else:
+            return net_income / total_assets
 
     def calculate_roe (self, net_income, total_equity):
-        return net_income / total_equity
+        if total_equity == 0:
+            print("Unable to calculate")
+        else:    
+            return net_income / total_equity
 
     def __repr__(self):
         return '<Financial %r>' % self.id
