@@ -62,7 +62,8 @@ def login():
         if sha256_crypt.verify(password, specific_user.password):
             response={
                 "jwt" : create_jwt(identity=specific_user.id),
-                "user_id": specific_user.id
+                "user_id": specific_user.id,
+                "user_name":specific_user.first_name
             }
             return jsonify(response),200 
         else:
@@ -121,7 +122,8 @@ def handle_signup():
             db.session.commit()
             response={
                 "jwt" : create_jwt(identity=new_user.id),
-                "user_id": new_user.id
+                "user_id": new_user.id,
+                "user_name":specific_user.first_name
             }
             return jsonify(response),200
 
@@ -175,14 +177,13 @@ def add_prospect():
         prospects_query = User.query.filter(User.userprospects.any(id=prospect_id)).filter(Prospects.prospectsuser.any(id=user_id)).all()
         prospects_list = list(filter(lambda each: each.id==user_id, prospects_query))
         if not prospects_list:
-            specific_prospect.prospectsuser.append(user)
-            db.session.add(background)
-            db.session.commit() 
+            specific_prospect.prospectsuser.append(user)            
+            db.session.commit()
             return jsonify(specific_prospect.serialize()),200
         else:
             return jsonify({"msg" : "prospect already created"}),400
-    else:   
-        db.session.add(new_prospect)
+    else:
+        db.session.add(new_prospect)       
         user.userprospects.append(new_prospect)           
         db.session.commit()
         return jsonify(new_prospect.serialize()),200
@@ -193,10 +194,58 @@ def get_all_prospects(user_id):
     prospects_list = list(map(lambda each: each.serialize(), prospects_query))
     return jsonify(prospects_list), 200
 
-# @app.route('/addProspect', methods=['POST'])
-# def add_prospect():
-#     input_data = request.json
-#     user_id = get_jwt_identity()
+    
+@app.route('/addBack_company', methods=['POST'])
+@jwt_required
+def addBackground_Company():
+    input_data = request.json
+    prospect_id = input_data['prospect_id']
+    user_id = get_jwt_identity()
+    # user_id=input_data['user_id']
+
+    spec_bakground = BackCompany.query.filter_by(prospect_id=prospect_id,user_id=user_id).first()    
+
+    if(not spec_bakground):
+        background = BackCompany(
+            prospect_id = prospect_id,
+            user_id = user_id,
+            data = input_data['data']         
+        )
+        db.session.add(background)
+        db.session.commit()
+        return jsonify(background.serialize()),200 
+    else:   
+        spec_bakground.data = input_data['data']
+        spec_bakground.date = datetime.now()
+        db.session.commit()
+        return jsonify(spec_bakground.serialize()),200
+
+@app.route('/addBack_owner', methods=['POST'])
+@jwt_required
+def addBackground_Owner():
+    input_data = request.json
+    prospect_id = input_data['prospect_id']
+    user_id = get_jwt_identity()
+    # user_id=input_data['user_id']
+
+    spec_bakground = BackOwner.query.filter_by(prospect_id=prospect_id,user_id=user_id).first() 
+
+    if(not spec_bakground):
+        background = BackOwner(
+            prospect_id = prospect_id,
+            user_id = user_id,
+            data = input_data['data']         
+        )
+        db.session.add(background)
+        db.session.commit()
+        return jsonify(background.serialize()),200
+    else:
+        spec_bakground.data = input_data['data']
+        spec_bakground.date = datetime.now() 
+        db.session.commit()       
+        return jsonify(spec_bakground.serialize()),200
+    
+
 
 @app.route('/backCompany/<int:user_id>/<int:prospect_id>', methods=['GET'])
 def get_background_Company(user_id,prospect_id):
@@ -204,8 +253,8 @@ def get_background_Company(user_id,prospect_id):
         user_id=user_id,prospect_id=prospect_id
     ).one_or_none()
     if (not specific_background):
-        specific_background = ""
-        return specific_background
+        background = ""
+        return background.serialize(),200
     else:
         return specific_background.serialize(), 200
 
@@ -216,42 +265,10 @@ def get_background_Owner(user_id,prospect_id):
         user_id=user_id,prospect_id=prospect_id
     ).one_or_none()
     if (not specific_background):
-        specific_background = ""
-        return specific_background
+        background = ""
+        return background.serialize(),200
     else:
         return specific_background.serialize(), 200
-
-
-
-@app.route('/addBack_company', methods=['POST'])
-@jwt_required
-def addBackground_Company():
-    input_data = request.json
-    user_id = get_jwt_identity()
-
-    background = BackCompany(
-        prospect_id = input_data['prospect_id'],
-        user_id = user_id,
-        data = input_data['data']           
-    )
-    db.session.add(background)
-    db.session.commit()
-    return background.serialize()
-
-@app.route('/addBack_owner', methods=['POST'])
-@jwt_required
-def addBackground_Owner():
-    input_data = request.json
-    user_id = get_jwt_identity()
-
-    background = BackOwner(
-        prospect_id = input_data['prospect_id'],
-        user_id = user_id,
-        data = input_data['data']           
-    )
-    db.session.add(background)
-    db.session.commit()
-    return background.serialize()
 
 
 @app.route('/addContact', methods=['POST'])
@@ -284,8 +301,21 @@ def addContact():
         )
         db.session.add(new_contact)
         new_contact.prospectscontacts.append(prospect_account)
-        db.session.commit()            
+        db.session.commit() 
         return jsonify(input_data),200
+
+@app.route('/editContact', methods=['PUT'])
+def editContact():
+    input_data = request.json
+    contact = Contacts.query.get(input_data["contact_id"])
+    contact.first_name=input_data["first_name"]
+    contact.last_name=input_data["last_name"]
+    contact.position=input_data["position"]
+    contact.title=input_data["title"]
+    contact.email=input_data["email"]
+    contact.phone_number=input_data["phone_number"]
+    db.session.commit()
+    return contact.serialize()
 
 @app.route('/contacts/<int:user_id>/<int:prospect_id>', methods=['GET'])
 def get_all_contacts(user_id,prospect_id):

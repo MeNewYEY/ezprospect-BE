@@ -151,7 +151,7 @@ class BackCompany(db.Model):
         self.is_active=True 
 
     def __repr__(self):
-        return '<Background %r>' % self.id
+        return '<BackCompany %r>' % self.id
 
     def serialize(self):
         return {
@@ -162,6 +162,7 @@ class BackCompany(db.Model):
             "date":self.date
             # do not serialize the password, its a security breach
         }
+
 class BackOwner(db.Model):
     id = db.Column(db.Integer, primary_key=True)    
     prospect_id = db.Column(db.Integer,nullable=False)
@@ -179,7 +180,7 @@ class BackOwner(db.Model):
         self.is_active=True 
 
     def __repr__(self):
-        return '<Background %r>' % self.id
+        return '<BackOwner %r>' % self.id
 
     def serialize(self):
         return {
