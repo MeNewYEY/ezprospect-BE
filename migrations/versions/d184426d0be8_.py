@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: febd4b0a6266
+Revision ID: d184426d0be8
 Revises: 
-Create Date: 2021-01-08 00:56:55.736677
+Create Date: 2021-01-12 14:59:27.505787
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'febd4b0a6266'
+revision = 'd184426d0be8'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -77,17 +77,15 @@ def upgrade():
     op.create_table('financial',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('prospect_id', sa.Integer(), nullable=True),
-    sa.Column('statement_date', sa.Integer(), nullable=True),
-    sa.Column('quality', sa.Integer(), nullable=True),
-    sa.Column('fye_month', sa.Integer(), nullable=True),
-    sa.Column('fye_day', sa.Integer(), nullable=True),
-    sa.Column('prepared_by', sa.Integer(), nullable=True),
+    sa.Column('statement_date', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('quality', sa.String(length=50), nullable=True),
     sa.Column('cash', sa.Numeric(), nullable=False),
     sa.Column('accounts_receivable', sa.Numeric(), nullable=False),
     sa.Column('raw_materials', sa.Numeric(), nullable=False),
     sa.Column('work_in_process', sa.Numeric(), nullable=False),
     sa.Column('finished_goods', sa.Numeric(), nullable=False),
     sa.Column('total_inventory', sa.Numeric(), nullable=False),
+    sa.Column('total_current_assets', sa.Numeric(), nullable=False),
     sa.Column('land', sa.Numeric(), nullable=False),
     sa.Column('construction_in_progress', sa.Numeric(), nullable=False),
     sa.Column('buildings', sa.Numeric(), nullable=False),
@@ -128,6 +126,7 @@ def upgrade():
     sa.Column('additional_paid_in_capital', sa.Numeric(), nullable=False),
     sa.Column('retained_earnings', sa.Numeric(), nullable=False),
     sa.Column('total_equity', sa.Numeric(), nullable=False),
+    sa.Column('liabilities_and_equity', sa.Numeric(), nullable=False),
     sa.Column('tangible_net_worth', sa.Numeric(), nullable=False),
     sa.Column('working_capital', sa.Numeric(), nullable=False),
     sa.Column('current_ratio', sa.Numeric(), nullable=False),
@@ -148,8 +147,8 @@ def upgrade():
     sa.Column('operating_profit_margin', sa.Numeric(), nullable=False),
     sa.Column('interest_expense', sa.Numeric(), nullable=False),
     sa.Column('interest_income', sa.Numeric(), nullable=False),
-    sa.Column('other_non_operating_income_expense', sa.Numeric(), nullable=False),
-    sa.Column('total_non_operating_income_expense', sa.Numeric(), nullable=False),
+    sa.Column('other_income_expense', sa.Numeric(), nullable=False),
+    sa.Column('total_other_income_expense', sa.Numeric(), nullable=False),
     sa.Column('total_profit_before_taxes', sa.Numeric(), nullable=False),
     sa.Column('tax_provision', sa.Numeric(), nullable=False),
     sa.Column('net_income', sa.Numeric(), nullable=False),
