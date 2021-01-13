@@ -131,9 +131,10 @@ def handle_signup():
             db.session.rollback()
             return jsonify({"msg" : error}),500
 
-@app.route('/protected', methods=['GET'])
+@app.route('/user', methods=['GET'])
 @jwt_required
-def protected():
+def getUser():
+    input_data = request.json
     specific_user_id = get_jwt_identity()
     specific_user = User.query.filter_by(
         id = specific_user_id
@@ -144,6 +145,16 @@ def protected():
 
     else:
         return jsonify(specific_user.serialize()),200
+
+@app.route('/editUser', methods=['POST'])
+@jwt_required
+def editUser():
+    input_data = request.json
+    user_id = get_jwt_identity()    
+    user=User.query.get(user_id)
+    user.phone_number=input_data["phone_number"]
+    db.session.commit()
+    return jsonify(user.serialize()),200
 
 @app.route('/addProspect', methods=['POST'])
 @jwt_required
