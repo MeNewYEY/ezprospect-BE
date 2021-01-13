@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import date, time, datetime
+from datetime import date, time, timezone, datetime
+from decimal import Decimal, ROUND_HALF_UP
 
 db = SQLAlchemy()
 
@@ -48,7 +49,7 @@ class User(db.Model):
         }
 
 class Prospects(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)    
     name = db.Column(db.String(250), unique=True, nullable=False)
     industry = db.Column(db.String(250), unique=False, nullable=False)
     address1 = db.Column(db.String(250), unique=False, nullable=False)
@@ -216,33 +217,31 @@ class Products(db.Model):
             # do not serialize the password, its a security breach
         }
 
-class Financials(db.Model):
+class Financial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    prospect_id = db.Column(db.Integer, unique=False)
-    user_id = db.Column(db.Integer)
-    statement_date = db.Column(db.Integer)
-    quality = db.Column(db.Integer)
-    fye_month = db.Column(db.Integer)
-    fye_day = db.Column(db.Integer)
-    prepared_by = db.Column(db.Integer)
+    prospect_id = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(db.Integer, nullable=False)
+    statement_date = db.Column(db.DateTime(timezone=True))
+    quality = db.Column(db.String(50))
     cash = db.Column(db.Numeric, unique=False, nullable=False)
     accounts_receivable = db.Column(db.Numeric, unique=False, nullable=False)
     raw_materials = db.Column(db.Numeric, unique=False, nullable=False)
     work_in_process = db.Column(db.Numeric, unique=False, nullable=False)
     finished_goods = db.Column(db.Numeric, unique=False, nullable=False)
     total_inventory = db.Column(db.Numeric, unique=False, nullable=False)
+    total_current_assets = db.Column(db.Numeric, unique=False, nullable=False)
     land = db.Column(db.Numeric, unique=False, nullable=False)
     construction_in_progress = db.Column(db.Numeric, unique=False, nullable=False)
     buildings = db.Column(db.Numeric, unique=False, nullable=False)
     machines_and_equipment = db.Column(db.Numeric, unique=False, nullable=False)
     furniture_and_fixtures = db.Column(db.Numeric, unique=False, nullable=False)
     vehicles = db.Column(db.Numeric, unique=False, nullable=False)
-    leashold_improvements = db.Column(db.Numeric, unique=False, nullable=False)
+    leasehold_improvements = db.Column(db.Numeric, unique=False, nullable=False)
     capital_leases = db.Column(db.Numeric, unique=False, nullable=False)
     other_fixed_assets = db.Column(db.Numeric, unique=False, nullable=False)
     total_gross_fixed_assets = db.Column(db.Numeric, unique=False, nullable=False)
     accumulated_depreciation = db.Column(db.Numeric, unique=False, nullable=False)
-    total_net_fixed_assets = db.Column(db.Numeric, unique=False, nullable=False)
+    net_fixed_assets = db.Column(db.Numeric, unique=False, nullable=False)
     other_operating_assets = db.Column(db.Numeric, unique=False, nullable=False)
     goodwill = db.Column(db.Numeric, unique=False, nullable=False)
     other_intangibles = db.Column(db.Numeric, unique=False, nullable=False)
@@ -271,6 +270,7 @@ class Financials(db.Model):
     additional_paid_in_capital = db.Column(db.Numeric, unique=False, nullable=False)
     retained_earnings = db.Column(db.Numeric, unique=False, nullable=False)
     total_equity = db.Column(db.Numeric, unique=False, nullable=False)
+    liabilities_and_equity = db.Column(db.Numeric, unique=False, nullable=False)
     tangible_net_worth = db.Column(db.Numeric, unique=False, nullable=False)
     working_capital = db.Column(db.Numeric, unique=False, nullable=False)
     current_ratio = db.Column(db.Numeric, unique=False, nullable=False)
@@ -291,8 +291,8 @@ class Financials(db.Model):
     operating_profit_margin = db.Column(db.Numeric, unique=False, nullable=False)
     interest_expense = db.Column(db.Numeric, unique=False, nullable=False)
     interest_income = db.Column(db.Numeric, unique=False, nullable=False)
-    other_non_operating_income_expense = db.Column(db.Numeric, unique=False, nullable=False)
-    total_non_operating_income_expense = db.Column(db.Numeric, unique=False, nullable=False)
+    other_income_expense = db.Column(db.Numeric, unique=False, nullable=False)
+    total_other_income_expense = db.Column(db.Numeric, unique=False, nullable=False)
     total_profit_before_taxes = db.Column(db.Numeric, unique=False, nullable=False)
     tax_provision = db.Column(db.Numeric, unique=False, nullable=False)
     net_income = db.Column(db.Numeric, unique=False, nullable=False)
@@ -304,103 +304,105 @@ class Financials(db.Model):
     roa = db.Column(db.Numeric, unique=False, nullable=False)
     roe = db.Column(db.Numeric, unique=False, nullable=False)
 
-    def __init__(self,accounts):
+    def __init__(self,accounts,user_id):
         self.prospect_id = accounts["prospect_id"]
-        self.user_id = accounts["user_id"]
-        self.statement_date = accounts["statement_date"]
+        self.user_id = user_id
+        self.statement_date = datetime.strptime(accounts["statement_date"],"%Y-%m-%d")
         self.quality = accounts["quality"]
-        self.fye_month = accounts["fye_month"]
-        self.fye_day = accounts["fye_day"]
-        self.prepared_by = accounts["prepared_by"]
-        self.cash = accounts["cash"]
-        self.accounts_receivable = accounts["accounts_receivable"]
-        self.raw_materials = accounts["raw_materials"]
-        self.work_in_process = accounts["work_in_process"]
-        self.finished_goods = accounts["finished_goods"]
-        self.total_inventory = self.calculate_total_inventory(accounts["raw_materials"], accounts["work_in_process"], accounts["finished_goods"])
-        self.land = accounts["land"]
-        self.construction_in_progress = accounts["construction_in_progress"]
-        self.buildings = accounts["buildings"]
-        self.machines_and_equipment = accounts["machines_and_equipment"]
-        self.furniture_and_fixtures = accounts["furniture_and_fixtures"]
-        self.vehicles = accounts["vehicles"]
-        self.leasehold_improvements = accounts["leasehold_improvements"]
-        self.capital_leases = accounts["capital_leases"]
-        self.other_fixed_assets = accounts["other_fixed_assets"]
-        self.total_gross_fixed_assets = self.calculate_total_gross_fixed_assets(accounts["land"], accounts["construction_in_progress"], accounts["buildings"], accounts["machines_and_equipment"], accounts["furniture_and_fixtures"], accounts["vehicles"], accounts["leasehold_improvements"], accounts["capital_leases"], accounts["other_fixed_assets"])
-        self.accumulated_depreciation = accounts["accumulated_depreciation"]
-        self.net_fixed_assets = self.calculate_net_fixed_assets(accounts["total_gross_fixed_assets"], accounts["accumulated_depreciation"])
-        self.other_operating_assets = accounts["other_operating_assets"]
-        self.goodwill = accounts["goodwill"]
-        self.other_intangibles = accounts["other_intangibles"]
-        self.total_intangibles = self.calculate_total_intangibles(accounts["goodwill"], accounts["other_intanigbles"])
-        self.accumulated_amortization = accounts["accumulated_amortization"]
-        self.net_intangibles = self.calculate_net_intangibles(accounts["total_intangibles"], accounts["accumulated_amortization"])
-        self.other_non_operating_assets = accounts["other_non_operating_assets"]
-        self.total_non_current_assets = self.calculate_total_non_current_assets(accounts["net_fixed_assets"], accounts["other_operating_assets"], accounts["net_intangibles"], accounts["other_non_operating_assets"])
-        self.total_assets = self.calculate_total_assets(accounts["total_current_assets"], accounts["total_non_current_assets"])
-        self.short_term_debt_secured = accounts["short_term_debt_secured"]
-        self.short_term_debt_unsecured = accounts["short_term_debt_unsecured"]
-        self.cpltd_secured = accounts["cpltd_secured"]
-        self.cpltd_unsecured = accounts["cpltd_unsecured"]
-        self.other_notes_payable = accounts["other_notes_payable"]
-        self.accounts_payable_trade = accounts["accounts_payable_trade"]
-        self.other_current_liabilities = accounts["other_current_liabilities"]
-        self.total_current_liaibilities = self.calculate_total_current_liabilities(accounts["short_term_debt_secured"], accounts["short_term_debt_unsecured"], accounts["cpltd_secured"], accounts["cpltd_unsecured"], accounts["other_notes_payable"], accounts["accounts_payable_trade"], accounts["other_current_liabilities"])
-        self.ltd_secured = accounts["ltd_secured"]
-        self.ltd_unsecured = accounts["ltd_unsecured"]
-        self.other_lt_notes_payable = accounts["other_lt_notes_payable"]
-        self.other_operating_liaibilities = accounts["other_operating_liabilities"]
-        self.other_non_operating_liabilities = accounts["other_non_operating_liabilities"]
-        self.total_non_current_liabilities = self.calculate_total_non_current_liabilities(accounts["ltd_secured"], accounts["ltd_unsecured"], accounts["other_lt_notes_payable"])
-        self.total_liabilities = self.calculate_total_liabilities(accounts["total_current_liabilities"], accounts["total_non_current_liabilities"])
-        self.common_stock = accounts["common_stock"]
-        self.additional_paid_in_capital = accounts["additional_paid_in_capital"]
-        self.retained_earnings = accounts["retained_earnings"]
-        self.total_equity = self.calculate_total_equity(accounts["common_stock"], accounts["additional_paid_in_capital"], accounts["retained_earnings"])
-        self.tangible_net_worth = self.calculate_tangible_net_worth(accounts["total_equity"], accounts["net_intangibles"])
-        self.working_capital = self.calculate_working_capital(accounts["total_current_assets"], accounts["total_current_liabilities"])
-        self.current_ratio = self.calculate_current_ratio(accounts["total_current_assets"], accounts["total_current_liabilities"])
-        self.quick_ratio = self.calculate_quick_ratio(accounts["total_current_assets"], accounts["total_inventory"], accounts["total_current_liabilities"])
-        self.leverage = self.calculate_leverage(accounts["total_liabilities"], accounts["total_equity"])
-        self.total_revenue = accounts["total_revenue"]
-        self.total_cogs = accounts["total_cogs"]
-        self.gross_profit = self.calculate_gross_profit(accounts["total_revenue"], accounts["total_cogs"])
-        self.gpm = self.calculate_gpm(accounts["gross_profit"], accounts["total_revenue"])
-        self.sga_expenses = accounts["sga_expenses"]
-        self.rent_expense = accounts["rent_expense"]
-        self.depreciation_expense = accounts["depreciation_expense"]
-        self.amortization_expense = accounts["amortization_expense"]
-        self.bad_debt_expense = accounts["bad_debt_expense"]
-        self.other_operating_expenses = accounts["other_operating_expenses"]
-        self.total_operating_expenses = self.calculate_total_operating_expenses(accounts["sga_expenses"], accounts["rent_expense"], accounts["depreciation_expense"], accounts["amortization_expense"], accounts["bad_debt_expense"], accounts["other_operating_expenses"])
-        self.total_operating_profit = self.calculate_total_operating_profit(accounts["gross_profit"], accounts["total_operating_expenses"])
-        self.operating_profit_margin = self.calculate_operating_profit_margin(accounts["total_operating_profit"], accounts["total_revenue"])
-        self.interest_expense = accounts["interest_expense"]
-        self.interest_income = accounts["interest_income"]
-        self.other_non_operating_income_expense = accounts["other_non_operating_income_expense"]
-        self.total_non_operating_income_expense = self.calculate_total_non_operating_income_expense(accounts["interest_expense"], accounts["interest_income"], accounts["other_non_operating_income_expense"])
-        self.total_profit_before_taxes = self.calculate_total_profit_before_taxes(accounts["total_operating_profit"], accounts["total_non_operating_income_expense"])
-        self.tax_provision = accounts["tax_provision"]
-        self.net_income = self.calculate_net_income(accounts["total_profit_before_taxes"], accounts["tax_provision"])
-        self.net_profit_margin = self.calculate_net_profit_margin(accounts["net_income"], accounts["total_revenue"])
-        self.distributions = accounts["distributions"]
-        self.ebida = self.calculate_ebida(accounts["net_income"], accounts["interest_expense"], accounts["depreciation_expense"], accounts["amortization_expense"])
-        self.ebitda = self.calculate_ebitda(accounts["net_income"], accounts["interest_expense"], accounts["tax_provision"], accounts["depreciation_expense"], accounts["amortization_expense"])
-        self.ebitdar = self.calculate_ebitdar(accounts["net_income"], accounts["interest_expense"], accounts["tax_provision"], accounts["depreciation_expense"], accounts["amortization_expense"], accounts["rent_expense"])
-        self.roa = self.calculate_roa(accounts["net_income"], accounts["total_assets"])
-        self.roe = self.calculate_roe(accounts["net_income, total_equity"])
+        self.cash = float(accounts["cash"])
+        self.accounts_receivable = float(accounts["accounts_receivable"])
+        self.raw_materials = float(accounts["raw_materials"])
+        self.work_in_process = float(accounts["work_in_process"])
+        self.finished_goods = float(accounts["finished_goods"])
+        self.total_inventory = self.calculate_total_inventory(self.raw_materials, self.work_in_process, self.finished_goods)
+        self.total_current_assets = self.calculate_total_current_assets(self.cash, self.accounts_receivable, self.total_inventory)
+        self.land = float(accounts["land"])
+        self.construction_in_progress = float(accounts["construction_in_progress"])
+        self.buildings = float(accounts["buildings"])
+        self.machines_and_equipment = float(accounts["machines_and_equipment"])
+        self.furniture_and_fixtures = float(accounts["furniture_and_fixtures"])
+        self.vehicles = float(accounts["vehicles"])
+        self.leasehold_improvements = float(accounts["leasehold_improvements"])
+        self.capital_leases = float(accounts["capital_leases"])
+        self.other_fixed_assets = float(accounts["other_fixed_assets"])
+        self.total_gross_fixed_assets = self.calculate_total_gross_fixed_assets(self.land, self.construction_in_progress, self.buildings, self.machines_and_equipment, self.furniture_and_fixtures, self.vehicles, self.leasehold_improvements, self.capital_leases, self.other_fixed_assets)
+        self.accumulated_depreciation = float(accounts["accumulated_depreciation"])
+        self.net_fixed_assets = self.calculate_net_fixed_assets(self.total_gross_fixed_assets, self.accumulated_depreciation)
+        self.other_operating_assets = float(accounts["other_operating_assets"])
+        self.goodwill = float(accounts["goodwill"])
+        self.other_intangibles = float(accounts["other_intangibles"])
+        self.total_intangibles = self.calculate_total_intangibles(self.goodwill, self.other_intangibles)
+        self.accumulated_amortization = float(accounts["accumulated_amortization"])
+        self.net_intangibles = self.calculate_net_intangibles(self.total_intangibles, self.accumulated_amortization)
+        self.other_non_operating_assets = float(accounts["other_non_operating_assets"])
+        self.total_non_current_assets = self.calculate_total_non_current_assets(self.net_fixed_assets, self.other_operating_assets, self.net_intangibles, self.other_non_operating_assets)
+        self.total_assets = self.calculate_total_assets(self.total_current_assets, self.total_non_current_assets)
+        self.short_term_debt_secured = float(accounts["short_term_debt_secured"])
+        self.short_term_debt_unsecured = float(accounts["short_term_debt_unsecured"])
+        self.cpltd_secured = float(accounts["cpltd_secured"])
+        self.cpltd_unsecured = float(accounts["cpltd_unsecured"])
+        self.other_notes_payable = float(accounts["other_notes_payable"])
+        self.accounts_payable_trade = float(accounts["accounts_payable_trade"])
+        self.other_current_liabilities = float(accounts["other_current_liabilities"])
+        self.total_current_liabilities = self.calculate_total_current_liabilities(self.short_term_debt_secured, self.short_term_debt_unsecured, self.cpltd_secured, self.cpltd_unsecured, self.other_notes_payable, self.accounts_payable_trade, self.other_current_liabilities)
+        self.ltd_secured = float(accounts["ltd_secured"])
+        self.ltd_unsecured = float(accounts["ltd_unsecured"])
+        self.other_lt_notes_payable = float(accounts["other_lt_notes_payable"])
+        self.other_operating_liaibilities = float(accounts["other_operating_liabilities"])
+        self.other_non_operating_liabilities = float(accounts["other_non_operating_liabilities"])
+        self.total_non_current_liabilities = self.calculate_total_non_current_liabilities(self.ltd_secured, self.ltd_unsecured, self.other_lt_notes_payable)
+        self.total_liabilities = self.calculate_total_liabilities(self.total_current_liabilities, self.total_non_current_liabilities)
+        self.common_stock = float(accounts["common_stock"])
+        self.additional_paid_in_capital = float(accounts["additional_paid_in_capital"])
+        self.retained_earnings = float(accounts["retained_earnings"])
+        self.total_equity = self.calculate_total_equity(self.common_stock, self.additional_paid_in_capital, self.retained_earnings)
+        self.liabilities_and_equity = self.calculate_liabilities_and_equity(self.total_liabilities, self.total_equity)
+        self.tangible_net_worth = self.calculate_tangible_net_worth(self.total_equity, self.net_intangibles)
+        self.working_capital = self.calculate_working_capital(self.total_current_assets, self.total_current_liabilities)
+        self.current_ratio = self.calculate_current_ratio(self.total_current_assets, self.total_current_liabilities)
+        self.quick_ratio = self.calculate_quick_ratio(self.total_current_assets, self.total_inventory, self.total_current_liabilities)
+        self.leverage = self.calculate_leverage(self.total_liabilities, self.total_equity)
+        self.total_revenue = float(accounts["total_revenue"])
+        self.total_cogs = float(accounts["total_cogs"])
+        self.gross_profit = self.calculate_gross_profit(self.total_revenue, self.total_cogs)
+        self.gpm = self.calculate_gpm(self.gross_profit, self.total_revenue)
+        self.sga_expenses = float(accounts["sga_expenses"])
+        self.rent_expense = float(accounts["rent_expense"])
+        self.depreciation_expense = float(accounts["depreciation_expense"])
+        self.amortization_expense = float(accounts["amortization_expense"])
+        self.bad_debt_expense = float(accounts["bad_debt_expense"])
+        self.other_operating_expenses = float(accounts["other_operating_expenses"])
+        self.total_operating_expenses = self.calculate_total_operating_expenses(self.sga_expenses, self.rent_expense, self.depreciation_expense, self.amortization_expense, self.bad_debt_expense, self.other_operating_expenses)
+        self.total_operating_profit = self.calculate_total_operating_profit(self.gross_profit, self.total_operating_expenses)
+        self.operating_profit_margin = self.calculate_operating_profit_margin(self.total_operating_profit, self.total_revenue)
+        self.interest_expense = float(accounts["interest_expense"])
+        self.interest_income = float(accounts["interest_income"])
+        self.other_income_expense = float(accounts["other_income_expense"])
+        self.total_other_income_expense = self.calculate_total_other_income_expense(self.interest_expense, self.interest_income, self.other_income_expense)
+        self.total_profit_before_taxes = self.calculate_total_profit_before_taxes(self.total_operating_profit, self.total_other_income_expense)
+        self.tax_provision = float(accounts["tax_provision"])
+        self.net_income = self.calculate_net_income(self.total_profit_before_taxes, self.tax_provision)
+        self.net_profit_margin = self.calculate_net_profit_margin(self.net_income, self.total_revenue)
+        self.distributions = float(accounts["distributions"])
+        self.ebida = self.calculate_ebida(self.net_income, self.interest_expense, self.depreciation_expense, self.amortization_expense)
+        self.ebitda = self.calculate_ebitda(self.net_income, self.interest_expense, self.tax_provision, self.depreciation_expense, self.amortization_expense)
+        self.ebitdar = self.calculate_ebitdar(self.net_income, self.interest_expense,self.tax_provision, self.depreciation_expense, self.amortization_expense, self.rent_expense)
+        self.roa = self.calculate_roa(self.net_income, self.total_assets)
+        self.roe = self.calculate_roe(self.net_income, self.total_equity)
 
     def calculate_total_inventory (self, raw_materials, work_in_process, finished_goods):
         return raw_materials + work_in_process + finished_goods
 
+    def calculate_total_current_assets (self, cash, accounts_receivable, total_inventory):
+        return cash + accounts_receivable + total_inventory
+    
     def calculate_total_gross_fixed_assets (self, land, construction_in_progress, buildings, machines_and_equipment, furniture_and_fixtures, vehicles, leasehold_improvements, capital_leases, other_fixed_assets):
         return land + construction_in_progress + buildings + machines_and_equipment + furniture_and_fixtures + vehicles + leasehold_improvements + capital_leases+ other_fixed_assets
 
     def calculate_net_fixed_assets (self, total_gross_fixed_assets, accumulated_depreciation):
         return total_gross_fixed_assets - accumulated_depreciation
 
-    def calculate_total_intangibles (self, goodwill, other_intanigbles):
+    def calculate_total_intangibles (self, goodwill, other_intangibles):
         return goodwill + other_intangibles
 
     def calculate_net_intangibles (self, total_intangibles, accumulated_amortization):
@@ -424,6 +426,9 @@ class Financials(db.Model):
     def calculate_total_equity (self, common_stock, additional_paid_in_capital, retained_earnings):
         return common_stock + additional_paid_in_capital + retained_earnings
 
+    def calculate_liabilities_and_equity (self, total_liabilities, total_equity):
+        return total_liabilities + total_equity
+
     def calculate_tangible_net_worth (self, total_equity, net_intangibles):
         return total_equity - net_intangibles
 
@@ -431,18 +436,32 @@ class Financials(db.Model):
         return total_current_assets - total_current_liabilities
     
     def calculate_current_ratio (self, total_current_assets, total_current_liabilities):
-        return total_current_assets / total_current_liabilities
+        if total_current_liabilities == 0:
+            print("Unable to calculate")
+            return 0
+        else:
+            return total_current_assets / total_current_liabilities
 
     def calculate_quick_ratio (self, total_current_assets, total_inventory, total_current_liabilities):
+        if total_current_liabilities == 0:
+            print("Unable to calculate")
+            return 0
         return (total_current_assets - total_inventory) / total_current_liabilities
 
     def calculate_leverage (self, total_liabilities, total_equity):
-        return total_liabilities / total_equity
+        if total_equity == 0:
+            print("Unable to calculate")
+            return 0
+        else:
+            return total_liabilities / total_equity
     
     def calculate_gross_profit (self, total_revenue,total_cogs):
         return total_revenue - total_cogs
         
     def calculate_gpm (self, gross_profit, total_revenue):
+        if total_revenue == 0:
+            print("Unable to calculate")
+            return 0
         return gross_profit / total_revenue
 
     def calculate_total_operating_expenses (self, sga_expenses, rent_expense, depreciation_expense, amortization_expense, bad_debt_expense, other_operating_expenses):
@@ -452,124 +471,123 @@ class Financials(db.Model):
         return gross_profit - total_operating_expenses
 
     def calculate_operating_profit_margin (self, total_operating_profit, total_revenue):
-        return total_operating_profit / total_revenue
+        return total_operating_profit / total_revenue if total_revenue != 0 else 0
 
-    def calculate_total_non_operating_income_expense (self, interest_expense, interest_income, other_non_operating_income_expense):
-        return interest_expense + interest_income + other_non_operating_income_expense
+    def calculate_total_other_income_expense (self, interest_expense, interest_income, other_income_expense):
+        return interest_expense + interest_income + other_income_expense
 
-    def calculate_total_profit_before_taxes (self, total_operating_profit, total_non_operating_income_expense):
-        return total_operating_profit - total_non_operating_income_expense
+    def calculate_total_profit_before_taxes (self, total_operating_profit, total_other_income_expense):
+        return total_operating_profit - total_other_income_expense
 
     def calculate_net_income (self, total_profit_before_taxes, tax_provision):
         return total_profit_before_taxes - tax_provision
 
     def calculate_net_profit_margin (self, net_income, total_revenue):
-        return net_income / total_revenue
+        return net_income / total_revenue if total_revenue != 0 else 0
 
     def calculate_ebida (self, net_income, interest_expense, depreciation_expense, amortization_expense):
         return net_income + interest_expense + depreciation_expense + amortization_expense
 
-    def calculate_editda (self, net_income, interest_expense, tax_provision, depreciation_expense, amortization_expense):
+    def calculate_ebitda (self, net_income, interest_expense, tax_provision, depreciation_expense, amortization_expense):
         return net_income + interest_expense + tax_provision + depreciation_expense + amortization_expense
 
-    def calculate_ebitdar (self, net_income, interest_expense, depreciation_expense, amortization_expense, rent_expense):
+    def calculate_ebitdar (self, net_income, interest_expense, tax_provision, depreciation_expense, amortization_expense, rent_expense):
         return net_income + interest_expense + tax_provision + depreciation_expense + amortization_expense + rent_expense
     
     def calculate_roa (self, net_income, total_assets):
-        return net_income / total_assets
+        return net_income / total_assets if total_assets != 0 else 0
 
     def calculate_roe (self, net_income, total_equity):
-        return net_income / total_equity
+        return net_income / total_equity if total_equity != 0 else 0
 
     def __repr__(self):
-        return '<Financials %r>' % self.id
+        return '<Financial %r>' % self.id
     
     def serialize(self):
         return {
             # do not serialize the password, its a security breach
             "prospect_id": self.prospect_id,
             "user_id": self.user_id,
-            "statement_date": self.statement_date,
+            "statement_date": self.statement_date.strftime("%m/%d/%Y"),
             "quality": self.quality,
-            "fye_month": self.fye_month,
-            "fye_day": self.fye_day,
-            "prepared_by": self.prepared_by,
-            "cash": self.cash,
-            "accounts_receivable": self.accounts_receivable,
-            "raw_materials": self.raw_materials,
-            "work_in_process": self.work_in_process,
-            "finished_goods": self.finished_goods,
-            "total_inventory": self.total_inventory,
-            "land": self.land,
-            "construction_in_progress": self.construction_in_progress,
-            "buildings": self.buildings,
-            "machines_and_equipment": self.machines_and_equipment,
-            "furniture_and_fixtures": self.furniture_and_fixtures,
-            "vehicles": self.vehicles,
-            "leasehold_improvements": self.leasehold_improvements,
-            "capital_leases": self.capital_leases,
-            "other_fixed_assets": self.other_fixed_assets,
-            "total_gross_fixed_assets": self.total_gross_fixed_assets,
-            "accumulated_depreciation": self.accumulated_depreciation,
-            "net_fixed_assets": self.net_fixed_assets,
-            "other_operating_assets": self.other_operating_assets,
-            "goodwill": self.goodwill,
-            "other_intangibles": self.other_intangibles,
-            "total_intangibles": self.total_intangibles,
-            "accumulated_amortization": self.accumulated_amortization,
-            "net_intangibles": self.net_intangibles,
-            "other_non_operating_assets": self.other_non_operating_assets,
-            "total_non_current_assets": self.total_non_current_assets,
-            "total_assets": self.total_assets,
-            "short_term_debt_secured": self.short_term_debt_secured,
-            "short_term_debt_unsecured": self.short_term_debt_unsecured,
-            "cpltd_secured": self.cpltd_secured,
-            "cpltd_unsecured": self.cpltd_unsecured,
-            "other_notes_payable": self.other_notes_payable,
-            "accounts_payable_trade": self.accounts_payable_trade,
-            "other_current_liabilities": self.other_current_liabilities,
-            "total_current_liaibilities": self.total_current_liaibilities,
-            "ltd_secured": self.ltd_secured,
-            "ltd_unsecured": self.ltd_unsecured,
-            "other_lt_notes_payable": self.other_lt_notes_payable,
-            "other_operating_liabilities": self.other_operating_liaibilities,
-            "other_non_operating_liabilities": self.other_non_operating_liabilities,
-            "total_non_current_liabilities": self.total_non_current_liabilities,
-            "total_liabilities": self.total_liabilities,
-            "common_stock": self.common_stock,
-            "additional_paid_in_capital": self.additional_paid_in_capital,
-            "retained_earnings": self.retained_earnings,
-            "total_equity": self.total_equity,
-            "tangible_net_worth": self.tangible_net_worth,
-            "working_capital": self.working_capital,
-            "current_ratio": self.current_ratio,
-            "quick_ratio": self.quick_ratio,
-            "leverage": self.leverage,
-            "total_revenue": self.total_revenue,
-            "total_cogs": self.total_cogs,
-            "gross_profit": self.gross_profit,
-            "gpm": self.gpm,
-            "sga_expenses": self.sga_expenses,
-            "rent_expense": self.rent_expense,
-            "depreciation_expense": self.depreciation_expense,
-            "amortization_expense": self.amortization_expense,
-            "bad_debt_expense": self.bad_debt_expense,
-            "other_operating_expenses": self.other_operating_expenses,
-            "total_operating_expenses": self.total_operating_expenses,
-            "total_operating_profit": self.total_operating_profit,
-            "operating_profit_margin": self.operating_profit_margin,
-            "interest_expense": self.interest_expense,
-            "interest_income": self.interest_income,
-            "other_non_operating_income_expense": self.other_non_operating_income_expense,
-            "total_non_operating_income_expense": self.total_non_operating_income_expense,
-            "total_profit_before_taxes": self.total_profit_before_taxes,
-            "tax_provision": self.tax_provision,
-            "net_income": self.net_income,
-            "net_profit_margin": self.net_profit_margin,
-            "distributions": self.distributions,
-            "ebida": self.ebida,
-            "ebitda": self.ebitda,
-            "ebitdar": self.ebitdar,
-            "roa": self.roa,
-            "roe": self.roe
+            "cash": '{:,}'.format(int(self.cash.to_integral_value(rounding=ROUND_HALF_UP))),
+            "accounts_receivable": '{:,}'.format(int(self.accounts_receivable.to_integral_value(rounding=ROUND_HALF_UP))),
+            "raw_materials": '{:,}'.format(int(self.raw_materials.to_integral_value(rounding=ROUND_HALF_UP))),
+            "work_in_process": '{:,}'.format(int(self.work_in_process.to_integral_value(rounding=ROUND_HALF_UP))),
+            "finished_goods": '{:,}'.format(int(self.finished_goods.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_inventory": '{:,}'.format(int(self.total_inventory.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_current_assets": '{:,}'.format(int(self.total_current_assets.to_integral_value(rounding=ROUND_HALF_UP))),
+            "land": '{:,}'.format(int(self.land.to_integral_value(rounding=ROUND_HALF_UP))),
+            "construction_in_progress": '{:,}'.format(int(self.construction_in_progress.to_integral_value(rounding=ROUND_HALF_UP))),
+            "buildings": '{:,}'.format(int(self.buildings.to_integral_value(rounding=ROUND_HALF_UP))),
+            "machines_and_equipment": '{:,}'.format(int(self.machines_and_equipment.to_integral_value(rounding=ROUND_HALF_UP))),
+            "furniture_and_fixtures": '{:,}'.format(int(self.furniture_and_fixtures.to_integral_value(rounding=ROUND_HALF_UP))),
+            "vehicles": '{:,}'.format(int(self.vehicles.to_integral_value(rounding=ROUND_HALF_UP))),
+            "leasehold_improvements": '{:,}'.format(int(self.leasehold_improvements.to_integral_value(rounding=ROUND_HALF_UP))),
+            "capital_leases": '{:,}'.format(int(self.capital_leases.to_integral_value(rounding=ROUND_HALF_UP))),
+            "other_fixed_assets": '{:,}'.format(int(self.other_fixed_assets.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_gross_fixed_assets": '{:,}'.format(int(self.total_gross_fixed_assets.to_integral_value(rounding=ROUND_HALF_UP))),
+            "accumulated_depreciation": '{:,}'.format(int(self.accumulated_depreciation.to_integral_value(rounding=ROUND_HALF_UP))),
+            "net_fixed_assets": '{:,}'.format(int(self.net_fixed_assets.to_integral_value(rounding=ROUND_HALF_UP))),
+            "other_operating_assets": '{:,}'.format(int(self.other_operating_assets.to_integral_value(rounding=ROUND_HALF_UP))),
+            "goodwill": '{:,}'.format(int(self.goodwill.to_integral_value(rounding=ROUND_HALF_UP))),
+            "other_intangibles": '{:,}'.format(int(self.other_intangibles.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_intangibles": '{:,}'.format(int(self.total_intangibles.to_integral_value(rounding=ROUND_HALF_UP))),
+            "accumulated_amortization": '{:,}'.format(int(self.accumulated_amortization.to_integral_value(rounding=ROUND_HALF_UP))),
+            "net_intangibles": '{:,}'.format(int(self.net_intangibles.to_integral_value(rounding=ROUND_HALF_UP))),
+            "other_non_operating_assets": '{:,}'.format(int(self.other_non_operating_assets.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_non_current_assets": '{:,}'.format(int(self.total_non_current_assets.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_assets": '{:,}'.format(int(self.total_assets.to_integral_value(rounding=ROUND_HALF_UP))),
+            "short_term_debt_secured": '{:,}'.format(int(self.short_term_debt_secured.to_integral_value(rounding=ROUND_HALF_UP))),
+            "short_term_debt_unsecured": '{:,}'.format(int(self.short_term_debt_unsecured.to_integral_value(rounding=ROUND_HALF_UP))),
+            "cpltd_secured": '{:,}'.format(int(self.cpltd_secured.to_integral_value(rounding=ROUND_HALF_UP))),
+            "cpltd_unsecured": '{:,}'.format(int(self.cpltd_unsecured.to_integral_value(rounding=ROUND_HALF_UP))),
+            "other_notes_payable": '{:,}'.format(int(self.other_notes_payable.to_integral_value(rounding=ROUND_HALF_UP))),
+            "accounts_payable_trade": '{:,}'.format(int(self.accounts_payable_trade.to_integral_value(rounding=ROUND_HALF_UP))),
+            "other_current_liabilities": '{:,}'.format(int(self.other_current_liabilities.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_current_liabilities": '{:,}'.format(int(self.total_current_liabilities.to_integral_value(rounding=ROUND_HALF_UP))),
+            "ltd_secured": '{:,}'.format(int(self.ltd_secured.to_integral_value(rounding=ROUND_HALF_UP))),
+            "ltd_unsecured": '{:,}'.format(int(self.ltd_unsecured.to_integral_value(rounding=ROUND_HALF_UP))),
+            "other_lt_notes_payable": '{:,}'.format(int(self.other_lt_notes_payable.to_integral_value(rounding=ROUND_HALF_UP))),
+            "other_operating_liabilities": '{:,}'.format(int(self.other_operating_liaibilities.to_integral_value(rounding=ROUND_HALF_UP))),
+            "other_non_operating_liabilities": '{:,}'.format(int(self.other_non_operating_liabilities.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_non_current_liabilities": '{:,}'.format(int(self.total_non_current_liabilities.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_liabilities": '{:,}'.format(int(self.total_liabilities.to_integral_value(rounding=ROUND_HALF_UP))),
+            "common_stock": '{:,}'.format(int(self.common_stock.to_integral_value(rounding=ROUND_HALF_UP))),
+            "additional_paid_in_capital": '{:,}'.format(int(self.additional_paid_in_capital.to_integral_value(rounding=ROUND_HALF_UP))),
+            "retained_earnings": '{:,}'.format(int(self.retained_earnings.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_equity": '{:,}'.format(int(self.total_equity.to_integral_value(rounding=ROUND_HALF_UP))),
+            "liabilities_and_equity": '{:,}'.format(int(self.liabilities_and_equity.to_integral_value(rounding=ROUND_HALF_UP))),
+            "tangible_net_worth": '{:,}'.format(int(self.tangible_net_worth.to_integral_value(rounding=ROUND_HALF_UP))),
+            "working_capital": '{:,}'.format(int(self.working_capital.to_integral_value(rounding=ROUND_HALF_UP))),
+            "current_ratio": f"{self.current_ratio.quantize(Decimal('1.00'))}X",
+            "quick_ratio": f"{self.quick_ratio.quantize(Decimal('1.00'))}X",
+            "leverage": f"{self.leverage.quantize(Decimal('1.00'))}X",
+            "total_revenue": '{:,}'.format(int(self.total_revenue.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_cogs": '{:,}'.format(int(self.total_cogs.to_integral_value(rounding=ROUND_HALF_UP))),
+            "gross_profit": '{:,}'.format(int(self.gross_profit.to_integral_value(rounding=ROUND_HALF_UP))),
+            "gpm": f'{self.gpm.quantize(Decimal("1.00"))}%',
+            "sga_expenses": '{:,}'.format(int(self.sga_expenses.to_integral_value(rounding=ROUND_HALF_UP))),
+            "rent_expense": '{:,}'.format(int(self.rent_expense.to_integral_value(rounding=ROUND_HALF_UP))),
+            "depreciation_expense": '{:,}'.format(int(self.depreciation_expense.to_integral_value(rounding=ROUND_HALF_UP))),
+            "amortization_expense": '{:,}'.format(int(self.amortization_expense.to_integral_value(rounding=ROUND_HALF_UP))),
+            "bad_debt_expense": '{:,}'.format(int(self.bad_debt_expense.to_integral_value(rounding=ROUND_HALF_UP))),
+            "other_operating_expenses": '{:,}'.format(int(self.other_operating_expenses.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_operating_expenses": '{:,}'.format(int(self.total_operating_expenses.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_operating_profit": '{:,}'.format(int(self.total_operating_profit.to_integral_value(rounding=ROUND_HALF_UP))),
+            "operating_profit_margin": f'{self.operating_profit_margin.quantize(Decimal("1.00"))}%',
+            "interest_expense": '{:,}'.format(int(self.interest_expense.to_integral_value(rounding=ROUND_HALF_UP))),
+            "interest_income": '{:,}'.format(int(self.interest_income.to_integral_value(rounding=ROUND_HALF_UP))),
+            "other_income_expense": '{:,}'.format(int(self.other_income_expense.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_other_income_expense": '{:,}'.format(int(self.total_other_income_expense.to_integral_value(rounding=ROUND_HALF_UP))),
+            "total_profit_before_taxes": '{:,}'.format(int(self.total_profit_before_taxes.to_integral_value(rounding=ROUND_HALF_UP))),
+            "tax_provision": '{:,}'.format(int(self.tax_provision.to_integral_value(rounding=ROUND_HALF_UP))),
+            "net_income": '{:,}'.format(int(self.net_income.to_integral_value(rounding=ROUND_HALF_UP))),
+            "net_profit_margin": f'{self.net_profit_margin.quantize(Decimal("1.00"))}%',
+            "distributions": '{:,}'.format(int(self.distributions.to_integral_value(rounding=ROUND_HALF_UP))),
+            "ebida": '{:,}'.format(int(self.ebida.to_integral_value(rounding=ROUND_HALF_UP))),
+            "ebitda": '{:,}'.format(int(self.ebitda.to_integral_value(rounding=ROUND_HALF_UP))),
+            "ebitdar": '{:,}'.format(int(self.ebitdar.to_integral_value(rounding=ROUND_HALF_UP))),
+            "roa": f'{self.roa.quantize(Decimal("1.00"))}%',
+            "roe": f'{self.roe.quantize(Decimal("1.00"))}%'
         }

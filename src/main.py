@@ -10,7 +10,7 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from datetime import date, time, datetime
-from models import db, User, Prospects, Contacts, Financials,BackOwner, BackCompany
+from models import db, User, Prospects, Contacts, Financial,BackOwner, BackCompany
 from flask_jwt_simple import (JWTManager, jwt_required, create_jwt, get_jwt_identity)
 from passlib.hash import sha256_crypt
 
@@ -123,7 +123,7 @@ def handle_signup():
             response={
                 "jwt" : create_jwt(identity=new_user.id),
                 "user_id": new_user.id,
-                "user_name":specific_user.first_name
+                "user_name":new_user.first_name
             }
             return jsonify(response),200
 
@@ -288,7 +288,7 @@ def addContact():
     prospects_list = list(map(lambda each: each.serialize(), contacts_query))  
 
     if (prospects_list!=[]):
-        return jsonify({"msg" : "contact already created"}),400
+        return jsonify({"msg" : "Contact already created"}),400
     else:
         new_contact= Contacts(
             first_name = input_data['first_name'],
@@ -317,6 +317,15 @@ def editContact():
     db.session.commit()
     return contact.serialize()
 
+@app.route('/deleteContact/<int:id>', methods=['DELETE'])
+def delete_Contact(id):
+    contact = Contacts.query.get(id)
+    if contact is None:
+        raise APIException('Statement not found', status_code=404)
+    db.session.delete(contact)
+    db.session.commit()
+    return "ok", 200
+
 @app.route('/contacts/<int:user_id>/<int:prospect_id>', methods=['GET'])
 def get_all_contacts(user_id,prospect_id):
     contacts_query = Contacts.query.filter(Contacts.prospectscontacts.any(id=prospect_id)).filter_by(user_id=user_id).all()
@@ -324,171 +333,176 @@ def get_all_contacts(user_id,prospect_id):
     return jsonify(contacts_list), 200
 
 @app.route('/financials', methods=['POST'])
+@jwt_required
 def save_financials():
     input_data = request.json
-    input_data['user_id'] = get_jwt_identity()
+    user_id = get_jwt_identity()
+    # user_id = input_data["user_id"]
 
-    if 'cash' not in input_data:
+    if 'cash' not in input_data or input_data['cash'] == "":
         input_data['cash'] = 0
 
-    if 'accounts_receivable' not in input_data:
+    if 'accounts_receivable' not in input_data or input_data['accounts_receivable'] == "":
         input_data['accounts_receivable'] = 0
 
-    if 'raw_materials' not in input_data:
+    if 'raw_materials' not in input_data or input_data['raw_materials'] == "":
         input_data['raw_materials'] = 0
 
-    if 'work_in_process' not in input_data:
+    if 'work_in_process' not in input_data or input_data['work_in_process'] == "":
         input_data['work_in_process'] = 0
 
-    if 'finished_goods' not in input_data:
+    if 'finished_goods' not in input_data or input_data['finished_goods'] == "":
         input_data['finished_goods'] = 0
 
-    if 'land' not in input_data:
+    if 'land' not in input_data or input_data['land'] == "":
         input_data['land'] = 0
     
-    if 'construction_in_progress' not in input_data:
+    if 'construction_in_progress' not in input_data or input_data['construction_in_progress'] == "":
         input_data['construction_in_progress'] = 0
 
-    if 'buildings' not in input_data:
+    if 'buildings' not in input_data or input_data['buildings'] == "":
         input_data['buildings'] = 0
 
-    if 'machines_and_equipment' not in input_data:
+    if 'machines_and_equipment' not in input_data or input_data['machines_and_equipment'] == "":
         input_data['machines_and_equipment'] = 0
 
-    if 'furniture_and_fixtures' not in input_data:
+    if 'furniture_and_fixtures' not in input_data or input_data['furniture_and_fixtures'] == "":
         input_data['furniture_and_fixtures'] = 0
     
-    if 'vehicles' not in input_data:
+    if 'vehicles' not in input_data or input_data['vehicles'] == "":
         input_data['vehicles'] = 0
 
-    if 'leasehold_improvements' not in input_data:
+    if 'leasehold_improvements' not in input_data or input_data['leasehold_improvements'] == "":
         input_data['leasehold_improvements'] = 0
 
-    if 'capital_leases' not in input_data:
+    if 'capital_leases' not in input_data or input_data['capital_leases'] == "":
         input_data['capital_leases'] = 0
 
-    if 'other_fixed_assets' not in input_data:
+    if 'other_fixed_assets' not in input_data or input_data['other_fixed_assets'] == "":
         input_data['other_fixed_assets'] = 0
     
-    if 'accumulated_depreciation' not in input_data:
+    if 'accumulated_depreciation' not in input_data or input_data['accumulated_depreciation'] == "":
         input_data['accumulated_depreciation'] = 0
 
-    if 'other_operating_assets' not in input_data:
+    if 'other_operating_assets' not in input_data or input_data['other_operating_assets'] == "":
         input_data['other_operating_assets'] = 0
 
-    if 'goodwill' not in input_data:
+    if 'goodwill' not in input_data or input_data['goodwill'] == "":
         input_data['goodwill'] = 0
 
-    if 'other_intangibles' not in input_data:
+    if 'other_intangibles' not in input_data or input_data['other_intangibles'] == "":
         input_data['other_intangibles'] = 0
     
-    if 'accumulated_amortization' not in input_data:
+    if 'accumulated_amortization' not in input_data or input_data['accumulated_amortization'] == "":
         input_data['accumulated_amortization'] = 0
 
-    if 'other_non_operating_assets' not in input_data:
+    if 'other_non_operating_assets' not in input_data or input_data['other_non_operating_assets'] == "":
         input_data['other_non_operating_assets'] = 0
     
-    if 'short_term_debt_secured' not in input_data:
+    if 'short_term_debt_secured' not in input_data or input_data['short_term_debt_secured'] == "":
         input_data['short_term_debt_secured'] = 0
 
-    if 'short_term_debt_unsecured' not in input_data:
+    if 'short_term_debt_unsecured' not in input_data or input_data['short_term_debt_unsecured'] == "":
         input_data['short_term_debt_unsecured'] = 0
 
-    if 'cpltd_secured' not in input_data:
+    if 'cpltd_secured' not in input_data or input_data['cpltd_secured'] == "":
         input_data['cpltd_secured'] = 0
 
-    if 'cpltd_unsecured' not in input_data:
+    if 'cpltd_unsecured' not in input_data or input_data['cpltd_unsecured'] == "":
         input_data['cpltd_unsecured'] = 0
     
-    if 'other_notes_payable' not in input_data:
+    if 'other_notes_payable' not in input_data or input_data['other_notes_payable'] == "":
         input_data['other_notes_payable'] = 0
 
-    if 'accounts_payable_trade' not in input_data:
+    if 'accounts_payable_trade' not in input_data or input_data['accounts_payable_trade'] == "":
         input_data['accounts_payable_trade'] = 0 
 
-    if 'other_current_liabilities' not in input_data:
+    if 'other_current_liabilities' not in input_data or input_data['other_current_liabilities'] == "":
         input_data['other_current_liabilities'] = 0
 
-    if 'ltd_secured' not in input_data:
+    if 'ltd_secured' not in input_data or input_data['ltd_secured'] == "":
         input_data['ltd_secured'] = 0
 
-    if 'ltd_unsecured' not in input_data:
+    if 'ltd_unsecured' not in input_data or input_data['ltd_unsecured'] == "":
         input_data['ltd_unsecured'] = 0
 
-    if 'other_lt_notes_payable' not in input_data:
+    if 'other_lt_notes_payable' not in input_data or input_data['other_lt_notes_payable'] == "":
         input_data['other_lt_notes_payable'] = 0
     
-    if 'other_operating_liabilities' not in input_data:
+    if 'other_operating_liabilities' not in input_data or input_data['other_operating_liabilities'] == "":
         input_data['other_operating_liabilities'] = 0
 
-    if 'other_non_operating_liabilities' not in input_data:
+    if 'other_non_operating_liabilities' not in input_data or input_data['other_non_operating_liabilities'] == "":
         input_data['other_non_operating_liabilities'] = 0
     
-    if 'common_stock' not in input_data:
+    if 'common_stock' not in input_data or input_data['common_stock'] == "":
         input_data['common_stock'] = 0
 
-    if 'additional_paid_in_capital' not in input_data:
+    if 'additional_paid_in_capital' not in input_data or input_data['additional_paid_in_capital'] == "":
         input_data['additional_paid_in_capital'] = 0
 
-    if 'retained_earnings' not in input_data:
+    if 'retained_earnings' not in input_data or input_data['retained_earnings'] == "":
         input_data['retained_earnings'] = 0
 
-    if 'total_revenue' not in input_data:
+    if 'total_revenue' not in input_data or input_data['total_revenue'] == "":
         input_data['total_revenue'] = 0
     
-    if 'total_cogs' not in input_data:
+    if 'total_cogs' not in input_data or input_data['total_cogs'] == "":
         input_data['total_cogs'] = 0
 
-    if 'sga_expenses' not in input_data:
+    if 'sga_expenses' not in input_data or input_data['sga_expenses'] == "":
         input_data['sga_expenses'] = 0 
 
-    if 'rent_expense' not in input_data:
+    if 'rent_expense' not in input_data or input_data['rent_expense'] == "":
         input_data['rent_expense'] = 0
 
-    if 'depreciation_expense' not in input_data:
+    if 'depreciation_expense' not in input_data or input_data['depreciation_expense'] == "":
         input_data['depreciation_expense'] = 0
 
-    if 'amortization_expense' not in input_data:
+    if 'amortization_expense' not in input_data or input_data['amortization_expense'] == "":
         input_data['amortization_expense'] = 0
     
-    if 'bad_debt_expense' not in input_data:
+    if 'bad_debt_expense' not in input_data or input_data['bad_debt_expense'] == "":
         input_data['bad_debt_expense'] = 0
 
-    if 'other_operating_expenses' not in input_data:
+    if 'other_operating_expenses' not in input_data or input_data['other_operating_expenses'] == "":
         input_data['other_operating_expenses'] = 0 
 
-    if 'interest_expense' not in input_data:
+    if 'interest_expense' not in input_data or input_data['interest_expense'] == "":
         input_data['interest_expense'] = 0
 
-    if 'interest_income' not in input_data:
+    if 'interest_income' not in input_data or input_data['interest_income'] == "":
         input_data['interest_income'] = 0
 
-    if 'other_non_operating_income_expense' not in input_data:
-        input_data['other_non_operating_income_expense'] = 0
+    if 'other_income_expense' not in input_data or input_data['other_income_expense'] == "":
+        input_data['other_income_expense'] = 0
     
-    if 'tax_provision' not in input_data:
+    if 'tax_provision' not in input_data or input_data['tax_provision'] == "":
         input_data['tax_provision'] = 0
 
-    if 'distributions' not in input_data:
+    if 'distributions' not in input_data or input_data['distributions'] == "":
         input_data['distributions'] = 0
-
-    if 'statement_date' in input_data and 'quality' in input_data and 'fye_month' in input_data and 'fye_day' in input_data and 'prepared_by' in input_data:
-        new_financial = Financials( accounts=input_data )
+    print(input_data)
+    if 'statement_date' in input_data and 'quality' in input_data:
+        new_financial = Financial(
+            accounts=input_data,
+            user_id = user_id
+        )
         db.session.add(new_financial)
         # You will have to format the following code accordingly
         try:
             db.session.commit()
             # the response dictionary needs to be worked - maybe serialize the values of new_financial to give the values they want?
 
-            response={
-                'financial' : new_financial.serialize()
-            }
-            return jsonify(response),200
+            # response={
+            #     'financial' : new_financial.serialize()
+            # }
+            return jsonify(new_financial.serialize()),200
 
         except Exception as error:
             db.session.rollback()
             # don't forget to set the error value
-            return jsonify({"msg" : error}),500
+            return jsonify({"msg" : error.args}),500
     else:
         return jsonify({"msg" : "information required missing"}),400    
     
@@ -497,21 +511,26 @@ def save_financials():
     # look at line 80
     # And make sure you assign user_id to input_data['user_id']
 
-@app.route('/financials/<int:user_id>/<int:prospect_id>', methods=['GET'])
-def getStatements(user_id,prospect_id):
-
-    statement_query = Financials.query.filter_by(
-        user_id=user_id,
+@app.route('/financials/<int:prospect_id>/<int:user_id>', methods=['GET'])
+# @jwt_required
+def getStatements(prospect_id,user_id):
+    # user_id = get_jwt_identity() 
+    user_id = user_id
+    statement_query = Financial.query.filter_by(
+        user_id = user_id,
         prospect_id=prospect_id
-    ).one_or_none()
-
-    financial_id = statement_query.id
-    return jsonify(financial_id), 200
+    ).all()
+    if(not statement_query):
+        return jsonify({"msg" : "Financial statement no created "})
+    else:
+        dictionary_list = [f.serialize() for f in statement_query]
+        print(dictionary_list[0])
+        return jsonify(dictionary_list), 200
 
 
 @app.route('/financials/<int:id>', methods=['DELETE'])
 def deleteStatement(id):
-    statement = Financials.query.get(id)
+    statement = Financial.query.get(id)
     if statement is None:
         raise APIException('Statement not found', status_code=404)
     db.session.delete(statement)
