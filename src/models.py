@@ -506,6 +506,7 @@ class Financial(db.Model):
     def serialize(self):
         return {
             # do not serialize the password, its a security breach
+            "id": self.id,
             "prospect_id": self.prospect_id,
             "user_id": self.user_id,
             "statement_date": self.statement_date.strftime("%m/%d/%Y"),

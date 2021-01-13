@@ -537,6 +537,14 @@ def deleteStatement(id):
     db.session.commit()
     return "ok", 200
 
+@app.route('/financials', methods=['GET'])
+def handle_financials():
+    
+    # GET request
+        all_financials = Financial.query.all()
+        all_financials = list(map(lambda x: x.serialize(), all_financials))
+        return jsonify(all_financials), 200
+
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
