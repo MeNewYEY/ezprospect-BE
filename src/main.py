@@ -539,14 +539,15 @@ def getStatements(prospect_id,user_id):
         return jsonify(dictionary_list), 200
 
 
-@app.route('/financials/<int:id>', methods=['DELETE'])
+@app.route('/deleteFinancial/<int:id>', methods=['DELETE'])
 def deleteStatement(id):
     statement = Financial.query.get(id)
-    if statement is None:
+    if(not statement):
         raise APIException('Statement not found', status_code=404)
-    db.session.delete(statement)
-    db.session.commit()
-    return "ok", 200
+    else:
+        db.session.delete(statement)
+        db.session.commit()
+        return "ok", 200
 
 
 # this only runs if `$ python src/main.py` is executed
