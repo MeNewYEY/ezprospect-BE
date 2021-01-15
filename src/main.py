@@ -539,7 +539,7 @@ def getStatements(prospect_id,user_id):
         return jsonify(dictionary_list), 200
 
 
-@app.route('/deleteFinancial/<int:id>', methods=['DELETE'])
+@app.route('/financials/<int:id>', methods=['DELETE'])
 def deleteStatement(id):
     statement = Financial.query.get(id)
     if(not statement):
